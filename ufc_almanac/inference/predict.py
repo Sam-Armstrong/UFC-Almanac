@@ -4,11 +4,10 @@ from pathlib import Path
 import torch
 from typing import Optional
 
-from data_handler import Data
-from helpers import get_device, resolve_model
-from models import MODELS
-from models.transformer import TransformerModel
-from globals import (
+from ufc_almanac.data import Data
+from ufc_almanac.helpers import get_device, resolve_model
+from ufc_almanac.models import MODELS, TransformerModel
+from ufc_almanac.globals import (
     INPUT_SIZE,
     LABEL_COLUMNS,
     MAX_FIGHTS,

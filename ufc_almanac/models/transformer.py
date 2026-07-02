@@ -1,9 +1,8 @@
 import math
-
 import torch
 import torch.nn as nn
 
-from globals import (
+from ufc_almanac.globals import (
     TRANSFORMER_FEATURE_SIZE,
     MAX_FIGHTS,
     NUM_CLASSES,

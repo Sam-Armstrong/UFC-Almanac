@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from globals import (
+from ufc_almanac.globals import (
     INPUT_SIZE,
     NUM_CLASSES,
 )

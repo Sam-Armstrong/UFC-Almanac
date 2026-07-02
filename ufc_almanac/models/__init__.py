@@ -7,3 +7,5 @@ MODELS = {
     "mlp": MLPModel,
     "transformer": TransformerModel,
 }
+
+__all__ = ["LinearModel", "MLPModel", "TransformerModel", "MODELS"]
