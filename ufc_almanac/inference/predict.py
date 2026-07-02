@@ -4,7 +4,7 @@ from pathlib import Path
 import torch
 from typing import Optional
 
-from ufc_almanac.data import Data
+from ufc_almanac.data import Data, pad_fight_sequence
 from ufc_almanac.helpers import get_device, resolve_model
 from ufc_almanac.models import MODELS, TransformerModel
 from ufc_almanac.globals import (
@@ -79,8 +79,8 @@ class FightPredictor:
         fighter1_sequence: list[list[float]],
         fighter2_sequence: list[list[float]],
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        padded1, mask1 = Data._pad_fight_sequence(fighter1_sequence, self.max_fights)
-        padded2, mask2 = Data._pad_fight_sequence(fighter2_sequence, self.max_fights)
+        padded1, mask1 = pad_fight_sequence(fighter1_sequence, self.max_fights)
+        padded2, mask2 = pad_fight_sequence(fighter2_sequence, self.max_fights)
 
         fighter1 = torch.tensor(
             padded1,
