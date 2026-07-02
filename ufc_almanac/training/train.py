@@ -9,8 +9,9 @@ from tqdm import tqdm
 
 from ufc_almanac.data import Data
 from ufc_almanac.globals import (
+    CHECKPOINTS_DIR,
     STANDARD_TRAINING_DATA_PATH,
-    TRANSFORMER_STANDARD_TRAINING_DATA_PATH
+    TRANSFORMER_STANDARD_TRAINING_DATA_PATH,
 )
 from ufc_almanac.helpers import get_device, resolve_model
 from ufc_almanac.models import MODELS
@@ -171,9 +172,15 @@ def train_ff(
     tqdm.write(
         f"Best val loss: {best_val_loss:.4f}, best val accuracy: {best_val_accuracy:.2f}%"
     )
-    model_path = Path("saved") / f"{model.__class__.__name__}.pt"
-    normalization_path = Path("saved") / f"{model.__class__.__name__}_normalization.pt"
-    save_artifacts(model, model_path, means, stds, normalization_path)
+    model_name = model.__class__.__name__
+    checkpoint_dir = Path(CHECKPOINTS_DIR)
+    save_artifacts(
+        model,
+        checkpoint_dir / f"{model_name}.pt",
+        means,
+        stds,
+        checkpoint_dir / f"{model_name}_normalization.pt",
+    )
 
 def train_transformer(
     training_data: dict[str, torch.Tensor],
@@ -258,12 +265,13 @@ def train_transformer(
         f"Best val loss: {best_val_loss:.4f}, best val accuracy: {best_val_accuracy:.2f}%"
     )
     model_name = model.__class__.__name__
+    checkpoint_dir = Path(CHECKPOINTS_DIR)
     save_artifacts(
         model,
-        Path("saved") / f"{model_name}.pt",
+        checkpoint_dir / f"{model_name}.pt",
         means,
         stds,
-        Path("saved") / f"{model_name}_normalization.pt",
+        checkpoint_dir / f"{model_name}_normalization.pt",
     )
 
 

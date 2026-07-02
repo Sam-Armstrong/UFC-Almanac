@@ -8,6 +8,7 @@ from ufc_almanac.data import Data, pad_fight_sequence
 from ufc_almanac.helpers import get_device, resolve_model
 from ufc_almanac.models import MODELS, TransformerModel
 from ufc_almanac.globals import (
+    CHECKPOINTS_DIR,
     INPUT_SIZE,
     LABEL_COLUMNS,
     MAX_FIGHTS,
@@ -31,8 +32,9 @@ class FightPredictor:
             self.model = model().to(self.device)
 
         model_name = self.model.__class__.__name__
-        self.model_path = Path("saved") / f"{model_name}.pt"
-        self.normalization_path = Path("saved") / f"{model_name}_normalization.pt"
+        checkpoint_dir = Path(CHECKPOINTS_DIR)
+        self.model_path = checkpoint_dir / f"{model_name}.pt"
+        self.normalization_path = checkpoint_dir / f"{model_name}_normalization.pt"
         self.means = torch.zeros(feature_size)
         self.stds = torch.ones(feature_size)
         self._load_artifacts()

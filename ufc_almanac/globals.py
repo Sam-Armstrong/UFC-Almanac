@@ -3,6 +3,7 @@ RESULTS_CSV = "data/FightResults.csv"
 STATS_CSV = "data/FightStats.csv"
 STANDARD_TRAINING_DATA_PATH = "data/StandardTrainingData.pt"
 TRANSFORMER_STANDARD_TRAINING_DATA_PATH = "data/TransformerTrainingData.pt"
+CHECKPOINTS_DIR = "artifacts/checkpoints"
 
 BLOCKED_RESOURCE_TYPES = {"image", "media", "font"}
 MIN_FIGHTS = 3

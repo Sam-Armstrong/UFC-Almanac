@@ -134,4 +134,4 @@ __pycache__/
 *.pickle
 *.pt
 
-saved/
+artifacts/checkpoints/
