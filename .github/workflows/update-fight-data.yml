@@ -27,15 +27,14 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      - name: Install scraper dependencies
-        run: |
-          pip install beautifulsoup4 lxml pandas playwright tqdm
+      - name: Install project
+        run: pip install -e ".[scraper]"
 
       - name: Install Playwright browser
         run: playwright install chromium --with-deps
 
       - name: Scrape new fight results and stats
-        run: python -c "from scraper import scrape_past_fights; scrape_past_fights(start_date='1/1/2010')"
+        run: python scripts/scrape_fights.py
 
       - name: Commit and push changes
         run: |
