@@ -76,7 +76,7 @@ Enter two fighter names when prompted. Type `exit`, `quit`, or `q` to stop.
 |------|-------------|---------|
 | `--model` | Model architecture to load: `linear`, `mlp`, or `transformer` | `linear` |
 
-The predictor loads trained weights from `saved/` for the selected model. Train a model first with `ufc-train`.
+The predictor loads trained weights from `artifacts/checkpoints/` for the selected model. Train a model first with `ufc-train`.
 
 ## Automated data updates
 
