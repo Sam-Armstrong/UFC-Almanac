@@ -5,8 +5,17 @@ import torch
 from tqdm import tqdm
 from typing import Optional, Union
 
-from exceptions import MinFightsException, MissingDataException
-from globals import (
+from ufc_almanac.data.utils import (
+    calculate_days_since,
+    days_since_fight_date,
+    load_csv,
+    load_training_data,
+    opposite_label,
+    pad_fight_sequence,
+    per_minute_stats,
+)
+from ufc_almanac.exceptions import MinFightsException, MissingDataException
+from ufc_almanac.globals import (
     FIGHTER_DATA_CSV,
     MAX_FIGHTS,
     MIN_FIGHTS,
@@ -18,102 +27,16 @@ from globals import (
 )
 
 
-def load_csv(path: str) -> Union[pandas.DataFrame, None]:
-    """
-    Load a CSV file, dropping any legacy index column
-    """
-    try:
-        dataframe = pandas.read_csv(path)
-        if "Unnamed: 0" in dataframe.columns:
-            dataframe = dataframe.drop(columns=["Unnamed: 0"])
-        return dataframe
-    except FileNotFoundError:
-        return None
-
-
-def calculate_days_since(day: str, month: str, year: str) -> int:
-    """
-    Calculates the days between a given date and the current date
-    """
-    a = datetime.date(int(year), int(month), int(day))
-    b = datetime.date.today()
-    days_since = b - a
-    days_since = str(days_since)
-
-    if len(days_since.split(" ")) > 1:
-        days_since = int(days_since.split(" ")[0])
-    else:
-        days_since = 0
-
-    return days_since
-
-
-def days_since_fight_date(date: str) -> int:
-    if "/" in date:
-        day, month, year = date.split("/")
-    else:
-        year, month, day = date.split("-")
-    return calculate_days_since(day, month, year)
-
-
-def per_minute_stats(row: pandas.Series) -> list[float]:
-    time = max(int(row["Time"]), 1)
-    minutes = time / 60
-    knockdown = int(row["Knockdowns"])
-    knockdown_taken = int(row["Knockdowns Against"])
-    sig_strikes_landed = int(row["Sig Strikes Landed"])
-    sig_strikes_attempted = int(row["Sig Strikes Attempted"])
-    sig_strikes_absorbed = int(row["Sig Strikes Absorbed"])
-    strikes_landed = int(row["Strikes Landed"])
-    strikes_attempted = int(row["Strikes Attempted"])
-    strikes_absorbed = int(row["Strikes Absorbed"])
-    takedowns = int(row["Takedowns"])
-    takedown_attempts = int(row["Takedown Attempts"])
-    got_takendown = int(row["Got Taken Down"])
-    submission_attempts = int(row["Submission Attempts"])
-    clinch_strikes = int(row["Clinch Strikes"])
-    clinch_strikes_taken = int(row["Clinch Strikes Taken"])
-    ground_strikes = int(row["Ground Strikes"])
-    ground_strikes_taken = int(row["Ground Strikes Taken"])
-
-    return [
-        round(knockdown / minutes, 4),
-        round(knockdown_taken / minutes, 4),
-        round(sig_strikes_landed / minutes, 4),
-        round(sig_strikes_attempted / minutes, 4),
-        round(sig_strikes_absorbed / minutes, 4),
-        round(strikes_landed / minutes, 4),
-        round(strikes_attempted / minutes, 4),
-        round(strikes_absorbed / minutes, 4),
-        round(strikes_landed / max(strikes_attempted, 1), 4),
-        round(takedowns / minutes, 4),
-        round(takedown_attempts / minutes, 4),
-        round(got_takendown / minutes, 4),
-        round(submission_attempts / minutes, 4),
-        round(clinch_strikes / minutes, 4),
-        round(clinch_strikes_taken / minutes, 4),
-        round(ground_strikes / minutes, 4),
-        round(ground_strikes_taken / minutes, 4),
-    ]
-
-
-def opposite_label(result: int) -> int:
-    if result == 3:
-        return 2
-    return 1 if result == 1 else 0
-
-
 class Data:
     def __init__(self):
+        standard_training_path = Path(STANDARD_TRAINING_DATA_PATH)
+        transformer_training_path = Path(TRANSFORMER_STANDARD_TRAINING_DATA_PATH)
+
         self.fight_results = load_csv(RESULTS_CSV)
         self.fight_stats = load_csv(STATS_CSV)
         self.fighter_data = load_csv(FIGHTER_DATA_CSV)
-        training_path = Path(STANDARD_TRAINING_DATA_PATH)
-        self.training_data = (
-            torch.load(training_path, weights_only=True)
-            if training_path.exists()
-            else None
-        )
+        self.standard_training_data = load_training_data(standard_training_path)
+        self.transformer_training_data = load_training_data(transformer_training_path)
 
     def find_fighter_stats(self, name: str, date: str, min_fights: int = 3) -> list[float]:
         """
@@ -353,8 +276,8 @@ class Data:
                 (sequence1, sequence2, label),
                 (sequence2, sequence1, opp_label),
             ):
-                padded1, mask1 = self._pad_fight_sequence(seq1, max_fights)
-                padded2, mask2 = self._pad_fight_sequence(seq2, max_fights)
+                padded1, mask1 = pad_fight_sequence(seq1, max_fights)
+                padded2, mask2 = pad_fight_sequence(seq2, max_fights)
                 fighter1_sequences.append(padded1)
                 fighter2_sequences.append(padded2)
                 fighter1_masks.append(mask1)
@@ -376,19 +299,6 @@ class Data:
         )
         tqdm.write(f"Saved transformer training data to {save_path}")
         tqdm.write(f"Training samples: {len(labels)}")
-
-    @staticmethod
-    def _pad_fight_sequence(
-        sequence: list[list[float]],
-        max_fights: int,
-    ) -> tuple[list[list[float]], list[float]]:
-        feature_size = len(sequence[0])
-        padded = [[0.0] * feature_size for _ in range(max_fights)]
-        mask = [0.0] * max_fights
-        for index, fight in enumerate(sequence[:max_fights]):
-            padded[index] = fight
-            mask[index] = 1.0
-        return padded, mask
 
     def create_standard_training_data(
         self,
