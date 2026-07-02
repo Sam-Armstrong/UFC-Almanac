@@ -322,12 +322,16 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def main() -> None:
     args = parse_args()
 
     transformer_model = "transformer" in args.model.lower()
     train_fn = train_transformer if transformer_model else train_ff
-    data_path = Path(TRANSFORMER_STANDARD_TRAINING_DATA_PATH if transformer_model else STANDARD_TRAINING_DATA_PATH)
+    data_path = Path(
+        TRANSFORMER_STANDARD_TRAINING_DATA_PATH
+        if transformer_model
+        else STANDARD_TRAINING_DATA_PATH
+    )
 
     if args.rebuild_data or not data_path.exists():
         data_handler = Data()
@@ -347,3 +351,7 @@ if __name__ == "__main__":
         weight_decay=args.weight_decay,
         dropout=args.dropout,
     )
+
+
+if __name__ == "__main__":
+    main()

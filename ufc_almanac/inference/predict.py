@@ -193,7 +193,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def main() -> None:
     args = parse_args()
     predictor = FightPredictor(resolve_model(args.model, MODELS))
     data = Data()
@@ -214,6 +214,19 @@ if __name__ == "__main__":
         if fighter2.lower() in break_works:
             break
 
-        result = predictor.predict_fighters(data, fighter1, fighter2, str(date.today()))
+        result = predictor.predict_fighters(
+            data,
+            fighter1,
+            fighter2,
+            str(date.today()),
+        )
         percentages = {label: value * 100 for label, value in result.items()}
-        print(f"{fighter1} Win: {percentages['Win']:.2f}%, {fighter1} Loss: {percentages['Loss']:.2f}%, Draw: {percentages['Draw']:.2f}%")
+        print(
+            f"{fighter1} Win: {percentages['Win']:.2f}%, "
+            f"{fighter1} Loss: {percentages['Loss']:.2f}%, "
+            f"Draw: {percentages['Draw']:.2f}%"
+        )
+
+
+if __name__ == "__main__":
+    main()

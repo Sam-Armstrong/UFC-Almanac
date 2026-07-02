@@ -347,3 +347,11 @@ def scrape_past_fights(start_date=None, end_date=None):
 
     with BrowserScraper() as scraper:
         run(scraper)
+
+
+def main() -> None:
+    scrape_past_fights(start_date="1/1/2010")
+
+
+if __name__ == "__main__":
+    main()

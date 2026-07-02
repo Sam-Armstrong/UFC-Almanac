@@ -175,3 +175,11 @@ def scrape_fighter_data():
 
     with BrowserScraper() as scraper:
         run(scraper)
+
+
+def main() -> None:
+    scrape_fighter_data()
+
+
+if __name__ == "__main__":
+    main()
