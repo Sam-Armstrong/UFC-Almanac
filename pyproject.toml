@@ -1,0 +1,43 @@
+[project]
+name = "ufc-almanac"
+version = "0.1.0"
+description = "A collection of UFC datasets, scraping tools, and machine learning models for fight outcome prediction."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+dependencies = [
+    "numpy",
+    "pandas",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+scraper = [
+    "beautifulsoup4",
+    "lxml",
+    "playwright",
+]
+ml = [
+    "matplotlib",
+    "torch",
+]
+all = [
+    "beautifulsoup4",
+    "lxml",
+    "playwright",
+    "matplotlib",
+    "torch",
+]
+
+[project.scripts]
+ufc-train = "ufc_almanac.training.train:main"
+ufc-predict = "ufc_almanac.inference.predict:main"
+ufc-scrape-fights = "ufc_almanac.scraping.fights:main"
+ufc-scrape-fighters = "ufc_almanac.scraping.fighters:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ufc_almanac"]
