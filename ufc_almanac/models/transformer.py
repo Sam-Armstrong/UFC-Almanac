@@ -49,7 +49,7 @@ class TransformerModel(nn.Module):
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
             nhead=nhead,
-            dim_feedforward=d_model * 2,
+            dim_feedforward=d_model,
             dropout=dropout,
             batch_first=True,
             activation=nn.functional.gelu,
