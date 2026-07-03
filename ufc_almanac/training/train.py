@@ -140,11 +140,18 @@ def train_ff(
         weight_decay=weight_decay,
     )
 
+    resolved_model_path, resolved_normalization_path = resolve_checkpoint_paths(
+        model.__class__,
+        model_path=model_path,
+    )
+
     start_time = time.time()
     best_val_loss = float("inf")
     best_val_accuracy = 0.0
+    saved_during_training = False
+    save_after_epoch = num_epochs / 3
     epoch_bar = tqdm(range(num_epochs), desc="Training", unit="epoch")
-    for _ in epoch_bar:
+    for epoch, _ in enumerate(epoch_bar):
         model.train()
         train_loss = 0.0
 
@@ -162,6 +169,15 @@ def train_ff(
         val_loss, val_accuracy = evaluate(
             model, device, val_loader, criterion, is_transformer=False
         )
+        if (epoch + 1) > save_after_epoch and val_loss < best_val_loss:
+            save_artifacts(
+                model,
+                resolved_model_path,
+                means,
+                stds,
+                resolved_normalization_path,
+            )
+            saved_during_training = True
         best_val_loss = min(best_val_loss, val_loss)
         best_val_accuracy = max(best_val_accuracy, val_accuracy)
         epoch_bar.set_postfix(
@@ -174,17 +190,14 @@ def train_ff(
     tqdm.write(
         f"Best val loss: {best_val_loss:.4f}, best val accuracy: {best_val_accuracy:.2f}%"
     )
-    resolved_model_path, resolved_normalization_path = resolve_checkpoint_paths(
-        model.__class__,
-        model_path=model_path,
-    )
-    save_artifacts(
-        model,
-        resolved_model_path,
-        means,
-        stds,
-        resolved_normalization_path,
-    )
+    if not saved_during_training:
+        save_artifacts(
+            model,
+            resolved_model_path,
+            means,
+            stds,
+            resolved_normalization_path,
+        )
 
 def train_transformer(
     training_data: dict[str, torch.Tensor],
@@ -242,11 +255,18 @@ def train_transformer(
         weight_decay=weight_decay,
     )
 
+    resolved_model_path, resolved_normalization_path = resolve_checkpoint_paths(
+        model.__class__,
+        model_path=model_path,
+    )
+
     start_time = time.time()
     best_val_loss = float("inf")
     best_val_accuracy = 0.0
+    saved_during_training = False
+    save_after_epoch = num_epochs / 3
     epoch_bar = tqdm(range(num_epochs), desc="Training transformer", unit="epoch")
-    for _ in epoch_bar:
+    for epoch, _ in enumerate(epoch_bar):
         model.train()
         train_loss = 0.0
 
@@ -264,6 +284,15 @@ def train_transformer(
         val_loss, val_accuracy = evaluate(
             model, device, val_loader, criterion, is_transformer=True
         )
+        if (epoch + 1) > save_after_epoch and val_loss < best_val_loss:
+            save_artifacts(
+                model,
+                resolved_model_path,
+                means,
+                stds,
+                resolved_normalization_path,
+            )
+            saved_during_training = True
         best_val_loss = min(best_val_loss, val_loss)
         best_val_accuracy = max(best_val_accuracy, val_accuracy)
         epoch_bar.set_postfix(
@@ -276,17 +305,14 @@ def train_transformer(
     tqdm.write(
         f"Best val loss: {best_val_loss:.4f}, best val accuracy: {best_val_accuracy:.2f}%"
     )
-    resolved_model_path, resolved_normalization_path = resolve_checkpoint_paths(
-        model.__class__,
-        model_path=model_path,
-    )
-    save_artifacts(
-        model,
-        resolved_model_path,
-        means,
-        stds,
-        resolved_normalization_path,
-    )
+    if not saved_during_training:
+        save_artifacts(
+            model,
+            resolved_model_path,
+            means,
+            stds,
+            resolved_normalization_path,
+        )
 
 
 def parse_args() -> argparse.Namespace:
