@@ -20,14 +20,12 @@ def calculate_days_since(day: str, month: str, year: str) -> int:
 
     return days_since
 
-
 def days_since_fight_date(date: str) -> int:
     if "/" in date:
         day, month, year = date.split("/")
     else:
         year, month, day = date.split("-")
     return calculate_days_since(day, month, year)
-
 
 def load_csv(path: str) -> Union[pandas.DataFrame, None]:
     """
@@ -41,7 +39,6 @@ def load_csv(path: str) -> Union[pandas.DataFrame, None]:
     except FileNotFoundError:
         return None
 
-
 def load_training_data(path: str) -> Union[torch.Tensor, None]:
     """
     Load a training data file, dropping any legacy index column
@@ -49,7 +46,6 @@ def load_training_data(path: str) -> Union[torch.Tensor, None]:
     if path.exists():
         return torch.load(path, weights_only=True)
     return None
-
 
 def opposite_label(result: int) -> int:
     if result == 3:
@@ -67,6 +63,16 @@ def pad_fight_sequence(
         padded[index] = fight
         mask[index] = 1.0
     return padded, mask
+
+def parse_date_sort_key(date: str) -> int:
+    """
+    Return a YYYYMMDD integer for chronological sorting of fight dates.
+    """
+    if "/" in date:
+        day, month, year = date.split("/")
+    else:
+        year, month, day = date.split("-")
+    return int(year) * 10000 + int(month) * 100 + int(day)
 
 def per_minute_stats(row: pandas.Series) -> list[float]:
     time = max(int(row["Time"]), 1)

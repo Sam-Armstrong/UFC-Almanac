@@ -12,6 +12,7 @@ from ufc_almanac.data.utils import (
     load_training_data,
     opposite_label,
     pad_fight_sequence,
+    parse_date_sort_key,
     per_minute_stats,
 )
 from ufc_almanac.exceptions import MinFightsException, MissingDataException
@@ -239,6 +240,7 @@ class Data:
         fighter1_masks = []
         fighter2_masks = []
         labels = []
+        fight_dates = []
 
         for _, row in tqdm(
             self.fight_results.iterrows(),
@@ -271,6 +273,7 @@ class Data:
 
             label = result - 1
             opp_label = opposite_label(result)
+            date_key = parse_date_sort_key(date)
 
             for seq1, seq2, sample_label in (
                 (sequence1, sequence2, label),
@@ -283,6 +286,7 @@ class Data:
                 fighter1_masks.append(mask1)
                 fighter2_masks.append(mask2)
                 labels.append(sample_label)
+                fight_dates.append(date_key)
 
         save_path_obj = Path(save_path) if isinstance(save_path, str) else save_path
         save_path_obj.parent.mkdir(parents=True, exist_ok=True)
@@ -293,6 +297,7 @@ class Data:
                 "fighter1_mask": torch.tensor(fighter1_masks, dtype=torch.float32),
                 "fighter2_mask": torch.tensor(fighter2_masks, dtype=torch.float32),
                 "labels": torch.tensor(labels, dtype=torch.long),
+                "fight_dates": torch.tensor(fight_dates, dtype=torch.long),
                 "max_fights": max_fights,
             },
             save_path,
@@ -332,6 +337,7 @@ class Data:
 
         features = []
         labels = []
+        fight_dates = []
 
         # loop through fight results and find the stats for each of the fighters from their n prior fights
         for _, row in tqdm(
@@ -361,19 +367,23 @@ class Data:
 
                 label = result - 1
                 opp_label = opposite_label(result)
+                date_key = parse_date_sort_key(date)
 
                 features.append(fighter1_useful_data + fighter2_useful_data)
                 labels.append(label)
+                fight_dates.append(date_key)
 
                 # reversed sample to help the model generalise/reduce overfitting
                 features.append(fighter2_useful_data + fighter1_useful_data)
                 labels.append(opp_label)
+                fight_dates.append(date_key)
 
         save_path_obj = Path(save_path) if isinstance(save_path, str) else save_path
         save_path_obj.parent.mkdir(parents=True, exist_ok=True)
         self.training_data = {
             "features": torch.tensor(features, dtype=torch.float32),
             "labels": torch.tensor(labels, dtype=torch.long),
+            "fight_dates": torch.tensor(fight_dates, dtype=torch.long),
         }
         torch.save(self.training_data, save_path)
         tqdm.write(f"Saved training data to {save_path}")

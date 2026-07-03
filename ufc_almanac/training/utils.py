@@ -12,6 +12,25 @@ def load_training_data(
 ) -> dict[str, torch.Tensor]:
     return torch.load(path, weights_only=True)
 
+def temporal_train_val_split(
+    num_samples: int,
+    val_fraction: float,
+    fight_dates: torch.Tensor | None = None,
+) -> tuple[list[int], list[int]]:
+    """
+    Split sample indices into train and validation sets.
+
+    Validation is the n most recent samples by fight date, where
+    n = max(1, int(num_samples * val_fraction)).
+    """
+    val_size = max(1, int(num_samples * val_fraction))
+    if fight_dates is not None:
+        sorted_indices = fight_dates.argsort(stable=True).tolist()
+    else:
+        sorted_indices = list(range(num_samples))
+    train_indices = sorted_indices[:-val_size]
+    val_indices = sorted_indices[-val_size:]
+    return train_indices, val_indices
 
 def extract_model_config(model: nn.Module) -> dict[str, Any]:
     """
@@ -26,7 +45,6 @@ def extract_model_config(model: nn.Module) -> dict[str, Any]:
             "dropout": model.classifier[2].p,
         }
     return {"dropout": model.dropout.p}
-
 
 def normalize_sequences(
     fighter1: torch.Tensor,
@@ -43,7 +61,6 @@ def normalize_sequences(
     fighter1 = (fighter1 - means) / stds
     fighter2 = (fighter2 - means) / stds
     return fighter1, fighter2, means, stds
-
 
 def save_artifacts(
     model: nn.Module,

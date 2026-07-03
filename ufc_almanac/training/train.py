@@ -4,7 +4,7 @@ import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset, random_split
+from torch.utils.data import DataLoader, Subset, TensorDataset
 from tqdm import tqdm
 
 from ufc_almanac.data import Data
@@ -20,6 +20,7 @@ from ufc_almanac.training.utils import (
     load_training_data,
     normalize_sequences,
     save_artifacts,
+    temporal_train_val_split,
 )
 
 
@@ -102,7 +103,7 @@ def train_ff(
         learning_rate: float
             The learning rate to use.
         val_fraction: float
-            The fraction of the training data to use for validation.
+            The fraction of the most recent samples (by fight date) held out for validation.
         weight_decay: float
             L2 regularization strength passed to the Adam optimizer.
         dropout: float
@@ -120,13 +121,13 @@ def train_ff(
     features = (features - means) / stds
 
     dataset = TensorDataset(features, labels)
-    val_size = max(1, int(len(dataset) * val_fraction))
-    train_size = len(dataset) - val_size
-    train_set, val_set = random_split(
-        dataset,
-        [train_size, val_size],
-        generator=torch.Generator().manual_seed(42),
+    train_indices, val_indices = temporal_train_val_split(
+        len(dataset),
+        val_fraction,
+        training_data.get("fight_dates"),
     )
+    train_set = Subset(dataset, train_indices)
+    val_set = Subset(dataset, val_indices)
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
@@ -217,13 +218,13 @@ def train_transformer(
         }
     )
 
-    val_size = max(1, int(len(dataset) * val_fraction))
-    train_size = len(dataset) - val_size
-    train_set, val_set = random_split(
-        dataset,
-        [train_size, val_size],
-        generator=torch.Generator().manual_seed(42),
+    train_indices, val_indices = temporal_train_val_split(
+        len(dataset),
+        val_fraction,
+        training_data.get("fight_dates"),
     )
+    train_set = Subset(dataset, train_indices)
+    val_set = Subset(dataset, val_indices)
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
@@ -288,9 +289,6 @@ def train_transformer(
     )
 
 
-# Main #
-
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train a fight outcome model.")
     parser.add_argument(
@@ -321,7 +319,7 @@ def parse_args() -> argparse.Namespace:
         "--val-fraction",
         type=float,
         default=0.1,
-        help="fraction of data held out for validation (default: 0.1)",
+        help="fraction of the most recent samples held out for validation (default: 0.1)",
     )
     parser.add_argument(
         "--rebuild-data",
@@ -385,12 +383,20 @@ def main() -> None:
             existing_data = load_training_data(data_path)
             if int(existing_data["max_fights"]) != args.max_fights:
                 needs_rebuild = True
+            if "fight_dates" not in existing_data:
+                needs_rebuild = True
         if needs_rebuild:
             data_handler = Data()
             data_handler.create_transformer_training_data(max_fights=args.max_fights)
-    elif args.rebuild_data or not data_path.exists():
-        data_handler = Data()
-        data_handler.create_standard_training_data()
+    else:
+        needs_rebuild = args.rebuild_data or not data_path.exists()
+        if not needs_rebuild:
+            existing_data = load_training_data(data_path)
+            if "fight_dates" not in existing_data:
+                needs_rebuild = True
+        if needs_rebuild:
+            data_handler = Data()
+            data_handler.create_standard_training_data()
 
     training_data = load_training_data(data_path)
     train_kwargs = {
