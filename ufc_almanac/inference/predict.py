@@ -5,10 +5,9 @@ import torch
 from typing import Optional
 
 from ufc_almanac.data import Data, pad_fight_sequence
-from ufc_almanac.helpers import get_device, resolve_model
+from ufc_almanac.helpers import get_device, resolve_checkpoint_paths, resolve_model
 from ufc_almanac.models import MODELS, TransformerModel
 from ufc_almanac.globals import (
-    CHECKPOINTS_DIR,
     INPUT_SIZE,
     LABEL_COLUMNS,
     MAX_FIGHTS,
@@ -20,7 +19,11 @@ from ufc_almanac.globals import (
 
 
 class FightPredictor:
-    def __init__(self, model: torch.nn.Module) -> None:
+    def __init__(
+        self,
+        model: torch.nn.Module,
+        model_path: Optional[Path] = None,
+    ) -> None:
         self.device = get_device()
         self.is_transformer = model is TransformerModel
         self.max_fights = self._resolve_max_fights() if self.is_transformer else MAX_FIGHTS
@@ -31,10 +34,10 @@ class FightPredictor:
         else:
             self.model = model().to(self.device)
 
-        model_name = self.model.__class__.__name__
-        checkpoint_dir = Path(CHECKPOINTS_DIR)
-        self.model_path = checkpoint_dir / f"{model_name}.pt"
-        self.normalization_path = checkpoint_dir / f"{model_name}_normalization.pt"
+        self.model_path, self.normalization_path = resolve_checkpoint_paths(
+            self.model.__class__,
+            model_path=model_path,
+        )
         self.means = torch.zeros(feature_size)
         self.stds = torch.ones(feature_size)
         self._load_artifacts()
@@ -192,12 +195,22 @@ def parse_args() -> argparse.Namespace:
         choices=sorted(MODELS),
         help="model architecture to load (default: linear)",
     )
+    parser.add_argument(
+        "--path",
+        type=Path,
+        default=None,
+        help="path to trained model weights "
+        "(default: artifacts/checkpoints/<ModelName>.pt)",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    predictor = FightPredictor(resolve_model(args.model, MODELS))
+    predictor = FightPredictor(
+        resolve_model(args.model, MODELS),
+        model_path=args.path,
+    )
     data = Data()
 
     break_works = [

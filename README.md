@@ -57,6 +57,7 @@ python scripts/train.py --model transformer
 | `--d-model` | Transformer hidden dimension (`transformer` only) | `64` |
 | `--num-layers` | Number of transformer encoder layers (`transformer` only) | `2` |
 | `--max-fights` | Past fights per fighter / sequence length (`transformer` only) | `8` |
+| `--path` | Path to save trained model weights (normalization stats saved alongside as `<stem>_normalization.pt`) | `artifacts/checkpoints/<ModelName>.pt` |
 | `--rebuild-data` | Regenerate training tensors from CSV files before training | off |
 
 Use `--rebuild-data` when the underlying CSV data has been updated. Changing `--max-fights` also regenerates transformer training data when it does not match the saved tensors.
@@ -78,8 +79,9 @@ Enter two fighter names when prompted. Type `exit`, `quit`, or `q` to stop.
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--model` | Model architecture to load: `linear`, `mlp`, or `transformer` | `linear` |
+| `--path` | Path to trained model weights | `artifacts/checkpoints/<ModelName>.pt` |
 
-The predictor loads trained weights from `artifacts/checkpoints/` for the selected model. Train a model first with `ufc-train`.
+The predictor loads trained weights and normalization stats from `artifacts/checkpoints/` for the selected model by default. Train a model first with `ufc-train`, or pass `--path` to load a custom checkpoint.
 
 ## Automated data updates
 

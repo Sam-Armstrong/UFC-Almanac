@@ -9,12 +9,11 @@ from tqdm import tqdm
 
 from ufc_almanac.data import Data
 from ufc_almanac.globals import (
-    CHECKPOINTS_DIR,
     MAX_FIGHTS,
     STANDARD_TRAINING_DATA_PATH,
     TRANSFORMER_STANDARD_TRAINING_DATA_PATH,
 )
-from ufc_almanac.helpers import get_device, resolve_model
+from ufc_almanac.helpers import get_device, resolve_checkpoint_paths, resolve_model
 from ufc_almanac.models import MODELS
 from ufc_almanac.training.dataset import FightSequenceDataset
 from ufc_almanac.training.utils import (
@@ -86,6 +85,7 @@ def train_ff(
     val_fraction: float,
     weight_decay: float,
     dropout: float,
+    model_path: Path | None = None,
 ) -> None:
     """
     Train the model using the training data and cross-entropy loss.
@@ -173,14 +173,16 @@ def train_ff(
     tqdm.write(
         f"Best val loss: {best_val_loss:.4f}, best val accuracy: {best_val_accuracy:.2f}%"
     )
-    model_name = model.__class__.__name__
-    checkpoint_dir = Path(CHECKPOINTS_DIR)
+    resolved_model_path, resolved_normalization_path = resolve_checkpoint_paths(
+        model.__class__,
+        model_path=model_path,
+    )
     save_artifacts(
         model,
-        checkpoint_dir / f"{model_name}.pt",
+        resolved_model_path,
         means,
         stds,
-        checkpoint_dir / f"{model_name}_normalization.pt",
+        resolved_normalization_path,
     )
 
 def train_transformer(
@@ -194,6 +196,7 @@ def train_transformer(
     dropout: float,
     d_model: int,
     num_layers: int,
+    model_path: Path | None = None,
 ) -> None:
     device = get_device()
     tqdm.write(f"Using device: {device}")
@@ -272,14 +275,16 @@ def train_transformer(
     tqdm.write(
         f"Best val loss: {best_val_loss:.4f}, best val accuracy: {best_val_accuracy:.2f}%"
     )
-    model_name = model.__class__.__name__
-    checkpoint_dir = Path(CHECKPOINTS_DIR)
+    resolved_model_path, resolved_normalization_path = resolve_checkpoint_paths(
+        model.__class__,
+        model_path=model_path,
+    )
     save_artifacts(
         model,
-        checkpoint_dir / f"{model_name}.pt",
+        resolved_model_path,
         means,
         stds,
-        checkpoint_dir / f"{model_name}_normalization.pt",
+        resolved_normalization_path,
     )
 
 
@@ -353,6 +358,13 @@ def parse_args() -> argparse.Namespace:
         default=MAX_FIGHTS,
         help="past fights per fighter, i.e. sequence length (default: 8)",
     )
+    parser.add_argument(
+        "--path",
+        type=Path,
+        default=None,
+        help="path to save trained model weights "
+        "(default: artifacts/checkpoints/<ModelName>.pt)",
+    )
     return parser.parse_args()
 
 
@@ -388,6 +400,7 @@ def main() -> None:
         "val_fraction": args.val_fraction,
         "weight_decay": args.weight_decay,
         "dropout": args.dropout,
+        "model_path": args.path,
     }
     if transformer_model:
         train_kwargs["d_model"] = args.d_model

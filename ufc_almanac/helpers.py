@@ -1,4 +1,8 @@
+from pathlib import Path
 import torch
+from typing import Optional, Union
+
+from ufc_almanac.globals import CHECKPOINTS_DIR
 
 
 def get_device() -> torch.device:
@@ -12,6 +16,23 @@ def get_device() -> torch.device:
     else:
         return torch.device("cpu")
 
+def resolve_checkpoint_paths(
+    model: type[torch.nn.Module],
+    model_path: Optional[Union[str, Path]] = None,
+) -> tuple[Path, Path]:
+    """
+    Resolve checkpoint paths for saving or loading a trained model.
+    """
+    model_name = model.__name__
+    resolved_model_path = (
+        Path(model_path)
+        if model_path is not None
+        else Path(CHECKPOINTS_DIR) / f"{model_name}.pt"
+    )
+    resolved_normalization_path = resolved_model_path.with_name(
+        f"{resolved_model_path.stem}_normalization{resolved_model_path.suffix}"
+    )
+    return resolved_model_path, resolved_normalization_path
 
 def resolve_model(
     model_name: str,
