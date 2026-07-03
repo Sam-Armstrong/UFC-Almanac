@@ -254,7 +254,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 11/12/2010,Pat Audinwood,John Makdessi,2,0
 01/1/2011,Frankie Edgar,Gray Maynard,3,1
 01/1/2011,Chris Leben,Brian Stann,2,0
-01/1/2011,Brandon Vera,Thiago Silva,2,1
+01/1/2011,Brandon Vera,Thiago Silva,4,1
 01/1/2011,Nate Diaz,Dong Hyun Kim,2,0
 01/1/2011,Clay Guida,Takanori Gomi,1,0
 01/1/2011,Jeremy Stephens,Marcus Davis,1,0
@@ -385,7 +385,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 26/6/2011,Joe Stevenson,Javier Vazquez,2,0
 26/6/2011,Joe Lauzon,Curt Warburton,1,0
 26/6/2011,Daniel Roberts,Rich Attonito,2,0
-26/6/2011,Nik Lentz,Charles Oliveira,2,1
+26/6/2011,Nik Lentz,Charles Oliveira,4,1
 26/6/2011,Ricardo Lamas,Matt Grice,1,0
 26/6/2011,Michael Johnson,Edward Faaloloto,1,0
 02/7/2011,Dominick Cruz,Urijah Faber,1,0
@@ -504,7 +504,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 12/11/2011,Cub Swanson,Ricardo Lamas,2,0
 12/11/2011,DaMarques Johnson,Clay Harvison,1,0
 12/11/2011,Norifumi Yamamoto,Darren Uyenoyama,2,0
-12/11/2011,Mackens Semerzier,Robert Peralta,2,1
+12/11/2011,Mackens Semerzier,Robert Peralta,4,1
 12/11/2011,Alex Caceres,Cole Escovedo,1,0
 12/11/2011,Mike Pierce,Paul Bradley,1,1
 12/11/2011,Aaron Rosa,Matt Lucas,1,0
@@ -756,9 +756,9 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 21/7/2012,Hector Lombard,Tim Boetsch,2,1
 21/7/2012,Cheick Kongo,Shawn Jordan,1,0
 21/7/2012,Brian Ebersole,James Head,2,1
-21/7/2012,Chris Clements,Matthew Riddle,2,1
+21/7/2012,Chris Clements,Matthew Riddle,4,1
 21/7/2012,Court McGee,Nick Ring,2,0
-21/7/2012,Roland Delorme,Francisco Rivera,2,1
+21/7/2012,Roland Delorme,Francisco Rivera,4,1
 21/7/2012,Anthony Perosh,Ryan Jimmo,2,0
 21/7/2012,Bryan Caraway,Mitch Gagnon,1,0
 21/7/2012,Antonio Carvalho,Daniel Pineda,1,0
@@ -768,14 +768,14 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 04/8/2012,Joe Lauzon,Jamie Varner,1,0
 04/8/2012,Mike Swick,DaMarques Johnson,1,0
 04/8/2012,Cole Miller,Nam Phan,2,1
-04/8/2012,Phil Davis,Wagner Prado,2,1
+04/8/2012,Phil Davis,Wagner Prado,4,1
 04/8/2012,Josh Grispi,Rani Yahya,2,0
 04/8/2012,Philip De Fries,Oli Thompson,1,0
 04/8/2012,Manvel Gamburyan,Michihiro Omigawa,1,0
 04/8/2012,John Moraga,Ulysses Gomez,1,0
 11/8/2012,Benson Henderson,Frankie Edgar,1,1
 11/8/2012,Donald Cerrone,Melvin Guillard,1,0
-11/8/2012,Jake Shields,Ed Herman,1,1
+11/8/2012,Jake Shields,Ed Herman,4,1
 11/8/2012,Yushin Okami,Buddy Roberts,1,0
 11/8/2012,Justin Lawrence,Max Holloway,2,0
 11/8/2012,Dennis Bermudez,Tommy Hayden,1,0
@@ -829,7 +829,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 13/10/2012,Luiz Cane,Chris Camozzi,2,0
 13/10/2012,Cristiano Marcello,Reza Madadi,1,1
 10/11/2012,Rich Franklin,Cung Le,2,0
-10/11/2012,Thiago Silva,Stanislav Nedkov,2,1
+10/11/2012,Thiago Silva,Stanislav Nedkov,4,1
 10/11/2012,Dong Hyun Kim,Paulo Thiago,1,0
 10/11/2012,Takanori Gomi,Mac Danzig,1,1
 10/11/2012,Zhang Tiequan,Jon Tuck,2,0
@@ -865,7 +865,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 14/12/2012,Colin Fletcher,Norman Parke,2,0
 14/12/2012,Hector Lombard,Rousimar Palhares,1,0
 14/12/2012,Chad Mendes,Yaotzin Meza,1,0
-14/12/2012,Igor Pokrajac,Joey Beltran,1,1
+14/12/2012,Igor Pokrajac,Joey Beltran,4,1
 14/12/2012,Mike Pierce,Seth Baczynski,1,0
 14/12/2012,Ben Alloway,Manuel Rodriguez,1,0
 14/12/2012,Brendan Loughnane,Mike Wilkinson,2,0
@@ -901,7 +901,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 19/1/2013,Ronny Markes,Andrew Craig,1,0
 19/1/2013,Diego Nunes,Nik Lentz,2,0
 19/1/2013,Edson Barboza,Lucas Martins,1,0
-19/1/2013,Iuri Alcantara,Pedro Nobre,1,1
+19/1/2013,Iuri Alcantara,Pedro Nobre,4,1
 19/1/2013,Wagner Prado,Ildemar Alcantara,2,0
 19/1/2013,Francisco Trinaldo,CJ Keith,1,0
 26/1/2013,Demetrious Johnson,John Dodson,1,0
@@ -931,7 +931,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 16/2/2013,Jimi Manuwa,Cyrille Diabate,1,0
 16/2/2013,Gunnar Nelson,Jorge Santiago,1,0
 16/2/2013,James Te Huna,Ryan Jimmo,1,0
-16/2/2013,Che Mills,Matthew Riddle,1,1
+16/2/2013,Che Mills,Matthew Riddle,4,1
 16/2/2013,Terry Etim,Renee Forte,2,0
 16/2/2013,Paul Sass,Danny Castillo,2,0
 16/2/2013,Andy Ogle,Josh Grispi,1,0
@@ -959,7 +959,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 02/3/2013,Riki Fukuda,Brad Tavares,2,0
 02/3/2013,Takeya Mizugaki,Bryan Caraway,1,1
 02/3/2013,Cristiano Marcello,Kazuki Tokudome,2,0
-02/3/2013,Alex Caceres,Kyung Ho Kang,2,1
+02/3/2013,Alex Caceres,Kyung Ho Kang,4,1
 02/3/2013,Marcelo Guimaraes,Hyun Gyu Lim,2,0
 16/3/2013,Georges St-Pierre,Nick Diaz,1,0
 16/3/2013,Carlos Condit,Johny Hendricks,2,0
@@ -1014,7 +1014,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 27/4/2013,Michael Bisping,Alan Belcher,1,0
 27/4/2013,Roy Nelson,Cheick Kongo,1,0
 27/4/2013,Phil Davis,Vinny Magalhaes,1,0
-27/4/2013,Jim Miller,Pat Healy,1,1
+27/4/2013,Jim Miller,Pat Healy,4,1
 27/4/2013,Rustam Khabilov,Yancy Medeiros,1,0
 27/4/2013,Gian Villante,Ovince Saint Preux,2,0
 27/4/2013,Sara McMann,Sheila Gaff,1,0
@@ -1128,7 +1128,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 28/8/2013,Darren Elkins,Hatsu Hioki,1,0
 28/8/2013,James Head,Jason High,2,0
 28/8/2013,Zak Cummings,Ben Alloway,1,0
-28/8/2013,Roger Bowling,Abel Trujillo,1,1
+28/8/2013,Roger Bowling,Abel Trujillo,4,1
 31/8/2013,Benson Henderson,Anthony Pettis,2,0
 31/8/2013,Frank Mir,Josh Barnett,2,0
 31/8/2013,Chad Mendes,Clay Guida,1,0
@@ -1182,14 +1182,14 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 19/10/2013,John Dodson,Darrell Montague,1,0
 19/10/2013,Tim Boetsch,CB Dollaway,1,1
 19/10/2013,Nate Marquardt,Hector Lombard,2,0
-19/10/2013,Sarah Kaufman,Jessica Eye,2,1
+19/10/2013,Sarah Kaufman,Jessica Eye,4,1
 19/10/2013,George Sotiropoulos,KJ Noons,2,0
 19/10/2013,TJ Waldburger,Adlan Amagov,2,0
 19/10/2013,Tony Ferguson,Mike Rio,1,0
 19/10/2013,Jeremy Larsen,Andre Fili,2,0
 19/10/2013,Dustin Pague,Kyoji Horiguchi,2,0
 26/10/2013,Lyoto Machida,Mark Munoz,1,0
-26/10/2013,Ross Pearson,Melvin Guillard,1,1
+26/10/2013,Ross Pearson,Melvin Guillard,4,1
 26/10/2013,Jimi Manuwa,Ryan Jimmo,1,0
 26/10/2013,Norman Parke,Jon Tuck,1,0
 26/10/2013,Alessio Sakara,Nicholas Musoke,2,0
@@ -1210,7 +1210,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 06/11/2013,Dennis Bermudez,Steven Siler,1,0
 06/11/2013,Amanda Nunes,Germaine de Randamie,1,0
 06/11/2013,Chris Camozzi,Lorenz Larkin,2,0
-06/11/2013,Yves Edwards,Yancy Medeiros,2,1
+06/11/2013,Yves Edwards,Yancy Medeiros,4,1
 06/11/2013,Neil Magny,Seth Baczynski,2,0
 06/11/2013,Derek Brunson,Brian Houston,1,0
 09/11/2013,Vitor Belfort,Dan Henderson,1,0
@@ -1275,7 +1275,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 28/12/2013,Dustin Poirier,Diego Brandao,1,0
 28/12/2013,Chris Leben,Uriah Hall,2,0
 28/12/2013,Gleison Tibau,Michael Johnson,2,0
-28/12/2013,Dennis Siver,Manvel Gamburyan,2,1
+28/12/2013,Dennis Siver,Manvel Gamburyan,4,1
 28/12/2013,John Howard,Siyar Bahadurzada,1,0
 28/12/2013,William Macario,Bobby Voelker,1,0
 28/12/2013,Robert Peralta,Estevan Payan,1,0
@@ -1307,7 +1307,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 25/1/2014,Darren Elkins,Jeremy Stephens,2,0
 25/1/2014,Alex Caceres,Sergio Pettis,1,0
 25/1/2014,Eddie Wineland,Yves Jabouin,1,0
-25/1/2014,Chico Camus,Yaotzin Meza,1,1
+25/1/2014,Chico Camus,Yaotzin Meza,4,1
 25/1/2014,Ramiro Hernandez,Hugo Viana,2,0
 25/1/2014,Daron Cruickshank,Mike Rio,1,0
 25/1/2014,George Sullivan,Mike Rhodes,1,0
@@ -1363,7 +1363,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 08/3/2014,Luke Barnatt,Mats Nilsson,1,0
 08/3/2014,Brad Scott,Claudio Silva,2,0
 08/3/2014,Igor Araujo,Danny Mitchell,1,0
-08/3/2014,Phil Harris,Louis Gaudinot,1,1
+08/3/2014,Phil Harris,Louis Gaudinot,4,1
 15/3/2014,Johny Hendricks,Robbie Lawler,1,0
 15/3/2014,Carlos Condit,Tyron Woodley,2,0
 15/3/2014,Diego Sanchez,Myles Jury,2,0
@@ -1395,7 +1395,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 11/4/2014,Jared Rosholt,Daniel Omielanczuk,1,0
 11/4/2014,Thales Leites,Trevor Smith,1,0
 11/4/2014,Alan Omer,Jim Alers,2,1
-11/4/2014,Rani Yahya,Johnny Bedford,2,1
+11/4/2014,Rani Yahya,Johnny Bedford,4,1
 16/4/2014,Michael Bisping,Tim Kennedy,2,0
 16/4/2014,Patrick Cote,Kyle Noke,1,0
 16/4/2014,Sheldon Westcott,Elias Theodorou,2,0
@@ -1531,7 +1531,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 05/7/2014,Chris Camozzi,Bruno Santos,2,1
 05/7/2014,George Roop,Rob Font,2,0
 05/7/2014,Luke Zachrich,Guilherme Vasconcelos,1,0
-05/7/2014,Kevin Casey,Bubba Bush,1,1
+05/7/2014,Kevin Casey,Bubba Bush,4,1
 06/7/2014,Frankie Edgar,BJ Penn,1,0
 06/7/2014,Corey Anderson,Matt Van Buren,1,0
 06/7/2014,Dhiego Lima,Eddie Gordon,2,0
@@ -1542,7 +1542,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 06/7/2014,Adriano Martins,Juan Manuel Puig,1,0
 06/7/2014,Patrick Walsh,Daniel Spohn,1,0
 06/7/2014,Sarah Moras,Alexis Dufresne,1,0
-06/7/2014,Robert Drysdale,Keith Berish,1,1
+06/7/2014,Robert Drysdale,Keith Berish,4,1
 16/7/2014,Donald Cerrone,Jim Miller,1,0
 16/7/2014,Edson Barboza,Evan Dunham,1,0
 16/7/2014,Rick Story,Leonardo Mafra,1,0
@@ -1571,7 +1571,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 26/7/2014,Daron Cruickshank,Jorge Masvidal,2,0
 26/7/2014,Kyle Kingsbury,Patrick Cummins,2,0
 26/7/2014,Hernani Perpetuo,Tim Means,2,0
-26/7/2014,Mike de la Torre,Brian Ortega,2,1
+26/7/2014,Mike de la Torre,Brian Ortega,4,1
 26/7/2014,Akbarh Arreola,Tiago dos Santos e Silva,2,0
 26/7/2014,Andreas Stahl,Gilbert Burns,2,0
 26/7/2014,Juliana Lima,Joanna Jedrzejczyk,2,0
@@ -1669,7 +1669,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 04/10/2014,Jason Saggo,Paul Felder,2,1
 04/10/2014,Paddy Holohan,Chris Kelades,2,0
 04/10/2014,Albert Tumenov,Matt Dwyer,1,0
-04/10/2014,Pedro Munhoz,Jerrod Sanders,1,1
+04/10/2014,Pedro Munhoz,Jerrod Sanders,4,1
 04/10/2014,Gunnar Nelson,Rick Story,2,1
 04/10/2014,Akira Corassani,Max Holloway,2,0
 04/10/2014,Ilir Latifi,Jan Blachowicz,2,0
@@ -1749,7 +1749,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 06/12/2014,Alex White,Clay Collard,2,0
 12/12/2014,Carla Esparza,Rose Namajunas,1,0
 12/12/2014,Jeremy Stephens,Charles Oliveira,2,0
-12/12/2014,KJ Noons,Daron Cruickshank,2,1
+12/12/2014,KJ Noons,Daron Cruickshank,4,1
 12/12/2014,Joe Proctor,Yancy Medeiros,2,0
 12/12/2014,Jessica Penne,Randa Markos,1,1
 12/12/2014,Felice Herrig,Lisa Ellis,1,0
@@ -1786,7 +1786,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 03/1/2015,Donald Cerrone,Myles Jury,1,0
 03/1/2015,Brad Tavares,Nate Marquardt,1,0
 03/1/2015,Kyoji Horiguchi,Louis Gaudinot,1,0
-03/1/2015,Hector Lombard,Joshua Burkman,1,1
+03/1/2015,Hector Lombard,Joshua Burkman,4,1
 03/1/2015,Danny Castillo,Paul Felder,2,0
 03/1/2015,Marcus Brimage,Cody Garbrandt,2,0
 03/1/2015,Shawn Jordan,Jared Cannonier,1,0
@@ -1817,7 +1817,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 24/1/2015,Mirsad Bektic,Paul Redmond,1,0
 24/1/2015,Viktor Pesta,Konstantin Erokhin,1,0
 24/1/2015,Neil Seery,Chris Beal,1,0
-31/1/2015,Anderson Silva,Nick Diaz,1,1
+31/1/2015,Anderson Silva,Nick Diaz,4,1
 31/1/2015,Tyron Woodley,Kelvin Gastelum,1,1
 31/1/2015,Joe Lauzon,Al Iaquinta,2,0
 31/1/2015,Thales Leites,Tim Boetsch,1,0
@@ -1855,7 +1855,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 28/2/2015,Alan Jouban,Richard Walsh,1,0
 28/2/2015,Tony Ferguson,Gleison Tibau,1,0
 28/2/2015,Mark Munoz,Roan Carneiro,2,0
-28/2/2015,Roman Salazar,Norifumi Yamamoto,2,1
+28/2/2015,Roman Salazar,Norifumi Yamamoto,4,1
 28/2/2015,Dhiego Lima,Tim Means,2,0
 28/2/2015,Derrick Lewis,Ruan Potts,1,0
 28/2/2015,James Krause,Valmir Lazaro,2,1
@@ -1880,7 +1880,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 21/3/2015,Godofredo Pepey,Andre Fili,1,0
 21/3/2015,Francisco Trinaldo,Akbarh Arreola,1,0
 21/3/2015,Edimilson Souza,Katsunori Kikuno,1,0
-21/3/2015,Leandro Silva,Drew Dober,1,1
+21/3/2015,Leandro Silva,Drew Dober,4,1
 21/3/2015,Leonardo Mafra,Cain Carrizosa,1,0
 21/3/2015,Jorge de Oliveira,Christos Giagos,2,0
 21/3/2015,Bentley Syler,Fredy Serrano,2,0
@@ -1970,7 +1970,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 30/5/2015,Francimar Barroso,Ryan Jimmo,1,0
 30/5/2015,Francisco Trinaldo,Norman Parke,1,0
 30/5/2015,Wendell Oliveira Marques,Darren Till,2,0
-30/5/2015,Rony Jason,Damon Jackson,2,1
+30/5/2015,Rony Jason,Damon Jackson,4,1
 30/5/2015,Jussier Formiga,Wilson Reis,1,0
 30/5/2015,Elizeu Zaleski dos Santos,Nicolas Dalby,2,1
 30/5/2015,Lucas Martins,Mirsad Bektic,2,0
@@ -2214,7 +2214,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 10/12/2015,Elias Theodorou,Thiago Santos,2,0
 10/12/2015,Tim Means,John Howard,1,0
 10/12/2015,Omari Akhmedov,Sergio Moraes,2,0
-10/12/2015,Antonio Carlos Junior,Kevin Casey,2,1
+10/12/2015,Antonio Carlos Junior,Kevin Casey,4,1
 10/12/2015,Aljamain Sterling,Johnny Eduardo,1,0
 10/12/2015,Santiago Ponzinibbio,Andreas Stahl,1,0
 10/12/2015,Danny Roberts,Nathan Coy,1,0
@@ -2251,7 +2251,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 19/12/2015,Sarah Kaufman,Valentina Shevchenko,2,1
 19/12/2015,Josh Samman,Tamdan McCrory,2,0
 19/12/2015,Nik Lentz,Danny Castillo,1,1
-19/12/2015,Cole Miller,Jim Alers,1,1
+19/12/2015,Cole Miller,Jim Alers,4,1
 19/12/2015,Kamaru Usman,Leon Edwards,1,0
 19/12/2015,Hayder Hassan,Vicente Luque,2,0
 19/12/2015,Francis Ngannou,Luis Henrique,1,0
@@ -2479,7 +2479,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 08/7/2016,Jake Matthews,Kevin Lee,2,0
 08/7/2016,Li Jingliang,Anton Zafir,1,0
 09/7/2016,Miesha Tate,Amanda Nunes,2,0
-09/7/2016,Brock Lesnar,Mark Hunt,2,1
+09/7/2016,Brock Lesnar,Mark Hunt,4,1
 09/7/2016,Daniel Cormier,Anderson Silva,1,0
 09/7/2016,Jose Aldo,Frankie Edgar,1,0
 09/7/2016,Cain Velasquez,Travis Browne,1,0
@@ -2662,7 +2662,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 19/11/2016,Johnny Eduardo,Manvel Gamburyan,1,0
 19/11/2016,Luis Henrique,Christian Colombo,1,0
 19/11/2016,Pedro Munhoz,Justin Scoggins,1,0
-19/11/2016,Francimar Barroso,Darren Stewart,1,1
+19/11/2016,Francimar Barroso,Darren Stewart,4,1
 19/11/2016,Gegard Mousasi,Uriah Hall,1,0
 19/11/2016,Ross Pearson,Stevie Ray,2,1
 19/11/2016,Timothy Johnson,Alexander Volkov,2,1
@@ -2747,7 +2747,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 30/12/2016,Antonio Carlos Junior,Marvin Vettori,1,0
 30/12/2016,Mike Pyle,Alex Garcia,2,0
 30/12/2016,Brandon Thatch,Niko Price,2,0
-30/12/2016,Alex Oliveira,Tim Means,2,1
+30/12/2016,Alex Oliveira,Tim Means,4,1
 15/1/2017,Yair Rodriguez,BJ Penn,1,0
 15/1/2017,Joe Lauzon,Marcin Held,1,1
 15/1/2017,Court McGee,Ben Saunders,2,0
@@ -2778,11 +2778,11 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 04/2/2017,Ovince Saint Preux,Volkan Oezdemir,2,1
 04/2/2017,Anthony Hamilton,Marcel Fortuna,2,0
 04/2/2017,Jessica Andrade,Angela Hill,1,0
-04/2/2017,Adam Milstead,Curtis Blaydes,1,1
+04/2/2017,Adam Milstead,Curtis Blaydes,4,1
 04/2/2017,Chas Skelly,Chris Gruetzemacher,1,0
 04/2/2017,Ricardo Ramos,Michinori Tanaka,1,0
 04/2/2017,Tecia Pennington,Bec Rawlings,1,0
-04/2/2017,Alex Morono,Niko Price,1,1
+04/2/2017,Alex Morono,Niko Price,4,1
 04/2/2017,Daniel Jolly,Khalil Rountree Jr.,2,0
 11/2/2017,Holly Holm,Germaine de Randamie,2,0
 11/2/2017,Anderson Silva,Derek Brunson,1,0
@@ -2816,7 +2816,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 04/3/2017,Mark Godbeer,Daniel Spitz,1,0
 04/3/2017,Tyson Pedro,Paul Craig,1,0
 04/3/2017,Albert Morales,Andre Soukhamthath,1,1
-11/3/2017,Vitor Belfort,Kelvin Gastelum,1,1
+11/3/2017,Vitor Belfort,Kelvin Gastelum,4,1
 11/3/2017,Mauricio Rua,Gian Villante,1,0
 11/3/2017,Edson Barboza,Beneil Dariush,1,0
 11/3/2017,Jussier Formiga,Ray Borg,2,0
@@ -2883,7 +2883,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 13/5/2017,Demian Maia,Jorge Masvidal,1,1
 13/5/2017,Frankie Edgar,Yair Rodriguez,1,0
 13/5/2017,Krzysztof Jotko,David Branch,2,1
-13/5/2017,Eddie Alvarez,Dustin Poirier,2,1
+13/5/2017,Eddie Alvarez,Dustin Poirier,4,1
 13/5/2017,Chas Skelly,Jason Knight,2,0
 13/5/2017,Chase Sherman,Rashad Coulter,1,0
 13/5/2017,James Vick,Marco Polo Reyes,1,0
@@ -2997,7 +2997,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 22/7/2017,Timothy Johnson,Junior Albini,2,0
 22/7/2017,Shane Burgos,Godofredo Pepey,1,0
 22/7/2017,Frankie Perez,Chris Wade,2,0
-29/7/2017,Daniel Cormier,Jon Jones,2,1
+29/7/2017,Daniel Cormier,Jon Jones,4,1
 29/7/2017,Tyron Woodley,Demian Maia,1,0
 29/7/2017,Cristiane Justino,Tonya Evinger,1,0
 29/7/2017,Robbie Lawler,Donald Cerrone,1,0
@@ -3200,7 +3200,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 30/12/2017,Dan Hooker,Marc Diakiese,1,0
 30/12/2017,Cynthia Calvillo,Carla Esparza,2,0
 30/12/2017,Carlos Condit,Neil Magny,2,0
-30/12/2017,Khalil Rountree Jr.,Michal Oleksiejczuk,2,1
+30/12/2017,Khalil Rountree Jr.,Michal Oleksiejczuk,4,1
 30/12/2017,Myles Jury,Ricky Glenn,1,0
 30/12/2017,Marvin Vettori,Omari Akhmedov,3,1
 30/12/2017,Louis Smolka,Matheus Nicolau,2,0
@@ -3395,7 +3395,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 09/6/2018,Rafael Dos Anjos,Colby Covington,2,0
 09/6/2018,Holly Holm,Megan Anderson,1,0
 09/6/2018,Andrei Arlovski,Tai Tuivasa,2,0
-09/6/2018,CM Punk,Mike Jackson,2,1
+09/6/2018,CM Punk,Mike Jackson,4,1
 09/6/2018,Alistair Overeem,Curtis Blaydes,2,0
 09/6/2018,Claudia Gadelha,Carla Esparza,1,1
 09/6/2018,Ricardo Lamas,Mirsad Bektic,2,1
@@ -3587,7 +3587,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 10/11/2018,Maycee Barber,Hannah Cifers,1,0
 10/11/2018,Michael Trizano,Luis Pena,1,1
 10/11/2018,Ashley Yoder,Amanda Cooper,1,1
-10/11/2018,Chas Skelly,Bobby Moffett,1,1
+10/11/2018,Chas Skelly,Bobby Moffett,4,1
 10/11/2018,Davi Ramos,John Gunther,1,0
 10/11/2018,Devonte Smith,Julian Erosa,1,0
 10/11/2018,Joseph Morales,Eric Shelton,2,1
@@ -3671,7 +3671,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 29/12/2018,Carlos Condit,Michael Chiesa,2,0
 29/12/2018,Ilir Latifi,Corey Anderson,2,0
 29/12/2018,Chad Mendes,Alexander Volkanovski,2,0
-29/12/2018,Andrei Arlovski,Walt Harris,2,1
+29/12/2018,Andrei Arlovski,Walt Harris,4,1
 29/12/2018,Cat Zingano,Megan Anderson,2,0
 29/12/2018,Douglas Silva de Andrade,Petr Yan,2,0
 29/12/2018,BJ Penn,Ryan Hall,2,0
@@ -3942,7 +3942,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 13/7/2019,Josh Emmett,Mirsad Bektic,1,0
 13/7/2019,Karl Roberson,Wellington Turman,1,1
 13/7/2019,Marvin Vettori,Cezar Ferreira,1,0
-13/7/2019,Mike Rodriguez,John Allan,1,1
+13/7/2019,Mike Rodriguez,John Allan,4,1
 13/7/2019,Andre Fili,Sheymon Moraes,1,0
 13/7/2019,Julianna Pena,Nicco Montano,1,0
 13/7/2019,Darren Elkins,Ryan Hall,2,0
@@ -4036,7 +4036,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 07/9/2019,Don Madge,Fares Ziam,1,0
 14/9/2019,Donald Cerrone,Justin Gaethje,2,0
 14/9/2019,Glover Teixeira,Nikita Krylov,1,1
-14/9/2019,Todd Duffee,Jeff Hughes,1,1
+14/9/2019,Todd Duffee,Jeff Hughes,4,1
 14/9/2019,Michel Pereira,Tristan Connelly,2,0
 14/9/2019,Uriah Hall,Antonio Carlos Junior,1,1
 14/9/2019,Misha Cirkunov,Jimmy Crute,1,0
@@ -4046,7 +4046,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 14/9/2019,Chas Skelly,Jordan Griffin,1,0
 14/9/2019,Louis Smolka,Ryan MacDonald,1,0
 14/9/2019,Kyle Prepolec,Austin Hubbard,2,0
-21/9/2019,Yair Rodriguez,Jeremy Stephens,2,1
+21/9/2019,Yair Rodriguez,Jeremy Stephens,4,1
 21/9/2019,Carla Esparza,Alexa Grasso,1,0
 21/9/2019,Brandon Moreno,Askar Askarov,3,1
 21/9/2019,Irene Aldana,Vanessa Melo,1,0
@@ -4081,7 +4081,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 05/10/2019,Brad Riddell,Jamie Mullarkey,1,0
 05/10/2019,Megan Anderson,Zarah Fairn,1,0
 05/10/2019,Nadia Kassem,Ji Yeon Kim,2,0
-05/10/2019,Khalid Taha,Bruno Silva,2,1
+05/10/2019,Khalid Taha,Bruno Silva,4,1
 12/10/2019,Joanna Jedrzejczyk,Michelle Waterson-Gomez,1,0
 12/10/2019,Cub Swanson,Kron Gracie,1,0
 12/10/2019,Niko Price,James Vick,1,0
@@ -4098,7 +4098,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 12/10/2019,JJ Aldrich,Lauren Mueller,1,0
 18/10/2019,Dominick Reyes,Chris Weidman,1,0
 18/10/2019,Yair Rodriguez,Jeremy Stephens,1,0
-18/10/2019,Greg Hardy,Ben Sosoli,1,1
+18/10/2019,Greg Hardy,Ben Sosoli,4,1
 18/10/2019,Joe Lauzon,Jonathan Pearce,1,0
 18/10/2019,Maycee Barber,Gillian Robertson,1,0
 18/10/2019,Deron Winn,Darren Stewart,2,1
@@ -4227,7 +4227,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 08/2/2020,Lauren Murphy,Andrea Lee,1,1
 08/2/2020,Alex Morono,Khaos Williams,2,0
 08/2/2020,Miles Johns,Mario Bautista,2,0
-08/2/2020,Domingo Pilarte,Journey Newson,2,1
+08/2/2020,Domingo Pilarte,Journey Newson,4,1
 08/2/2020,Andre Ewell,Jonathan Martinez,1,1
 08/2/2020,Austin Lingo,Youssef Zalal,2,0
 15/2/2020,Corey Anderson,Jan Blachowicz,2,0
@@ -4329,7 +4329,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 30/5/2020,Mackenzie Dern,Hannah Cifers,1,0
 30/5/2020,Katlyn Cerminara,Antonina Shevchenko,1,0
 30/5/2020,Daniel Rodriguez,Gabe Green,1,0
-30/5/2020,Jamahal Hill,Klidson Abreu,1,1
+30/5/2020,Jamahal Hill,Klidson Abreu,4,1
 30/5/2020,Tim Elliott,Brandon Royval,2,0
 30/5/2020,Louis Smolka,Casey Kenney,2,0
 30/5/2020,Chris Gutierrez,Vince Morales,1,0
@@ -4362,7 +4362,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 20/6/2020,Jim Miller,Roosevelt Roberts,1,0
 20/6/2020,Clay Guida,King Green,2,0
 20/6/2020,Tecia Pennington,Brianna Fortino,1,0
-20/6/2020,Marc-Andre Barriault,Oskar Piechota,1,1
+20/6/2020,Marc-Andre Barriault,Oskar Piechota,4,1
 20/6/2020,Cortney Casey,Gillian Robertson,2,0
 20/6/2020,Frank Camacho,Justin Jaynes,2,0
 20/6/2020,Roxanne Modafferi,Lauren Murphy,2,0
@@ -4421,7 +4421,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 25/7/2020,Alex Oliveira,Peter Sobotta,1,0
 25/7/2020,Khamzat Chimaev,Rhys McKee,1,0
 25/7/2020,Francisco Trinaldo,Jai Herbert,1,0
-25/7/2020,Nicolas Dalby,Jesse Ronson,1,1
+25/7/2020,Nicolas Dalby,Jesse Ronson,4,1
 25/7/2020,Tom Aspinall,Jake Collier,1,0
 25/7/2020,Movsar Evloev,Mike Grundy,1,0
 25/7/2020,Tanner Boser,Raphael Pessoa,1,0
@@ -4467,7 +4467,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 22/8/2020,Amanda Lemos,Mizuki,1,0
 22/8/2020,Ike Villanueva,Jordan Wright,2,0
 22/8/2020,Carlton Minus,Matthew Semelsberger,2,0
-22/8/2020,Timur Valiev,Trevin Jones,2,1
+22/8/2020,Timur Valiev,Trevin Jones,4,1
 29/8/2020,Anthony Smith,Aleksandar Rakic,2,0
 29/8/2020,Robbie Lawler,Neil Magny,2,0
 29/8/2020,Ji Yeon Kim,Alexa Grasso,2,0
@@ -4492,13 +4492,13 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 12/9/2020,King Green,Alan Patrick,1,0
 12/9/2020,Billy Quarantillo,Kyle Nelson,1,0
 12/9/2020,Julia Avila,Sijara Eubanks,2,0
-12/9/2020,Roosevelt Roberts,Kevin Croom,2,1
+12/9/2020,Roosevelt Roberts,Kevin Croom,4,1
 12/9/2020,Alexandr Romanov,Roque Martinez,1,0
 12/9/2020,Brok Weaver,Jalin Turner,2,0
 12/9/2020,Bryan Barberena,Anthony Ivy,1,0
 12/9/2020,Sabina Mazo,Justine Kish,1,0
 19/9/2020,Colby Covington,Tyron Woodley,1,0
-19/9/2020,Donald Cerrone,Niko Price,1,1
+19/9/2020,Donald Cerrone,Niko Price,4,1
 19/9/2020,Khamzat Chimaev,Gerald Meerschaert,1,0
 19/9/2020,Johnny Walker,Ryan Spann,1,0
 19/9/2020,Mackenzie Dern,Randa Markos,1,0
@@ -4744,12 +4744,12 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 06/3/2021,Livinha Souza,Amanda Lemos,2,0
 06/3/2021,Uros Medic,Aalon Cruz,1,0
 06/3/2021,Mario Bautista,Trevin Jones,2,0
-13/3/2021,Leon Edwards,Belal Muhammad,2,1
+13/3/2021,Leon Edwards,Belal Muhammad,4,1
 13/3/2021,Misha Cirkunov,Ryan Spann,2,0
 13/3/2021,Dan Ige,Gavin Tucker,1,0
 13/3/2021,Jonathan Martinez,Davey Grant,2,0
 13/3/2021,Manel Kape,Matheus Nicolau,2,1
-13/3/2021,Eryk Anders,Darren Stewart,2,1
+13/3/2021,Eryk Anders,Darren Stewart,4,1
 13/3/2021,Angela Hill,Ashley Yoder,1,0
 13/3/2021,Charles Jourdain,Marcelo Rojo,1,0
 13/3/2021,Rani Yahya,Ray Rodriguez,1,0
@@ -4835,7 +4835,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 08/5/2021,Christian Aguilera,Carlston Harris,2,0
 15/5/2021,Charles Oliveira,Michael Chandler,1,0
 15/5/2021,Tony Ferguson,Beneil Dariush,2,0
-15/5/2021,Matt Schnell,Rogerio Bontorin,2,1
+15/5/2021,Matt Schnell,Rogerio Bontorin,4,1
 15/5/2021,Katlyn Cerminara,Viviane Araujo,1,0
 15/5/2021,Shane Burgos,Edson Barboza,2,0
 15/5/2021,Jacare Souza,Andre Muniz,2,0
@@ -4866,7 +4866,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 05/6/2021,Tanner Boser,Ilir Latifi,2,1
 05/6/2021,Francisco Trinaldo,Muslim Salikhov,2,0
 05/6/2021,Makwan Amirkhani,Kamuela Kirk,2,0
-05/6/2021,Alan Patrick,Mason Jones,2,1
+05/6/2021,Alan Patrick,Mason Jones,4,1
 05/6/2021,Manon Fiorot,Tabatha Ricci,1,0
 05/6/2021,Sean Woodson,Youssef Zalal,1,1
 05/6/2021,Claudio Puelles,Jordan Leavitt,1,0
@@ -4899,7 +4899,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 26/6/2021,Ciryl Gane,Alexander Volkov,1,0
 26/6/2021,Tanner Boser,Ovince Saint Preux,1,0
 26/6/2021,Raoni Barcelos,Timur Valiev,2,0
-26/6/2021,Andre Fili,Daniel Pineda,2,1
+26/6/2021,Andre Fili,Daniel Pineda,4,1
 26/6/2021,Tim Means,Nicolas Dalby,1,0
 26/6/2021,Renato Moicano,Jai Herbert,1,0
 26/6/2021,Kennedy Nzechukwu,Danilo Marques,1,0
@@ -4930,7 +4930,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 17/7/2021,Amanda Lemos,Montserrat Conejo Ruiz,1,0
 17/7/2021,Khalid Taha,Sergey Morozov,2,0
 17/7/2021,Francisco Figueiredo,Malcolm Gordon,2,0
-17/7/2021,Alan Baudot,Rodrigo Nascimento,2,1
+17/7/2021,Alan Baudot,Rodrigo Nascimento,4,1
 24/7/2021,Cory Sandhagen,TJ Dillashaw,2,1
 24/7/2021,Kyler Phillips,Raulian Paiva,2,0
 24/7/2021,Darren Elkins,Darrick Minner,1,0
@@ -5026,7 +5026,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 25/9/2021,Matthew Semelsberger,Martin Sano,1,0
 25/9/2021,Jonathan Pearce,Omar Morales,1,0
 02/10/2021,Thiago Santos,Johnny Walker,1,0
-02/10/2021,Kevin Holland,Kyle Daukaus,1,1
+02/10/2021,Kevin Holland,Kyle Daukaus,4,1
 02/10/2021,Alex Oliveira,Niko Price,2,0
 02/10/2021,Misha Cirkunov,Krzysztof Jotko,2,1
 02/10/2021,Alexander Hernandez,Mike Breeden,1,0
@@ -5420,7 +5420,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 02/7/2022,Alexander Volkanovski,Max Holloway,1,0
 02/7/2022,Sean Strickland,Alex Pereira,2,0
 02/7/2022,Robbie Lawler,Bryan Barberena,2,0
-02/7/2022,Pedro Munhoz,Sean O'Malley,2,1
+02/7/2022,Pedro Munhoz,Sean O'Malley,4,1
 02/7/2022,Brad Riddell,Jalin Turner,2,0
 02/7/2022,Jim Miller,Donald Cerrone,1,0
 02/7/2022,Ian Machado Garry,Gabe Green,1,0
@@ -5472,7 +5472,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 30/7/2022,Magomed Ankalaev,Anthony Smith,1,0
 30/7/2022,Alex Morono,Matthew Semelsberger,1,0
 30/7/2022,Drew Dober,Rafael Alves,1,0
-30/7/2022,Don'Tale Mayes,Hamdy Abdelwahab,1,1
+30/7/2022,Don'Tale Mayes,Hamdy Abdelwahab,4,1
 30/7/2022,Drakkar Klose,Rafa Garcia,1,0
 30/7/2022,Michael Morales,Adam Fugitt,1,0
 30/7/2022,Joselyne Edwards,Ji Yeon Kim,1,1
@@ -5822,7 +5822,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 15/4/2023,Joselyne Edwards,Lucie Pudilova,1,1
 22/4/2023,Sergei Pavlovich,Curtis Blaydes,1,0
 22/4/2023,Brad Tavares,Bruno Silva,2,0
-22/4/2023,King Green,Jared Gordon,2,1
+22/4/2023,King Green,Jared Gordon,4,1
 22/4/2023,Iasmin Lucindo,Brogan Walker,1,0
 22/4/2023,Jeremiah Wells,Matthew Semelsberger,1,1
 22/4/2023,Ricky Glenn,Christos Giagos,2,0
@@ -5895,7 +5895,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 10/6/2023,Mike Malott,Adam Fugitt,1,0
 10/6/2023,Dan Ige,Nate Landwehr,1,0
 10/6/2023,Marc-Andre Barriault,Eryk Anders,1,0
-10/6/2023,Nassourdine Imavov,Chris Curtis,1,1
+10/6/2023,Nassourdine Imavov,Chris Curtis,4,1
 10/6/2023,Miranda Maverick,Jasmine Jasudavicius,2,0
 10/6/2023,Aiemann Zahabi,Aoriqileng,1,0
 10/6/2023,Kyle Nelson,Blake Bilder,1,0
@@ -5911,11 +5911,11 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 17/6/2023,Kyung Ho Kang,Cristian Quinonez,1,0
 17/6/2023,Carlos Hernandez,Denys Bondar,1,0
 17/6/2023,Tereza Bleda,Gabriella Fernandes,1,0
-17/6/2023,Dan Argueta,Ronnie Lawrence,1,1
+17/6/2023,Dan Argueta,Ronnie Lawrence,4,1
 17/6/2023,Zac Pauga,Modestas Bukauskas,2,0
 24/6/2023,Josh Emmett,Ilia Topuria,2,0
 24/6/2023,Amanda Ribas,Maycee Barber,2,0
-24/6/2023,Austen Lane,Justin Tafa,2,1
+24/6/2023,Austen Lane,Justin Tafa,4,1
 24/6/2023,David Onama,Gabriel Santos,1,0
 24/6/2023,Brendan Allen,Bruno Silva,1,0
 24/6/2023,Neil Magny,Phil Rowe,1,1
@@ -5951,7 +5951,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 08/7/2023,Cameron Saaiman,Terrence Mitchell,1,0
 08/7/2023,Shannon Ross,Jesus Aguilar,2,0
 08/7/2023,Kamuela Kirk,Esteban Ribovics,2,0
-15/7/2023,Holly Holm,Mayra Bueno Silva,2,1
+15/7/2023,Holly Holm,Mayra Bueno Silva,4,1
 15/7/2023,Jack Della Maddalena,Bassil Hafez,1,1
 15/7/2023,Ottman Azaitar,Francisco Prado,2,0
 15/7/2023,Albert Duraev,JunYong Park,2,0
@@ -6070,7 +6070,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 16/9/2023,Fernando Padilla,Kyle Nelson,2,0
 16/9/2023,Loopy Godinez,Elise Reed,1,0
 16/9/2023,Roman Kopylov,Josh Fremd,1,0
-16/9/2023,Edgar Chairez,Daniel Lacerda,1,1
+16/9/2023,Edgar Chairez,Daniel Lacerda,4,1
 16/9/2023,Tracy Cortez,Jasmine Jasudavicius,1,0
 16/9/2023,Alex Reyes,Charlie Campbell,2,0
 16/9/2023,Josefine Knutsson,Marnic Mann,1,0
@@ -6079,7 +6079,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 23/9/2023,Marina Rodriguez,Michelle Waterson-Gomez,1,0
 23/9/2023,Bryan Battle,AJ Fletcher,1,0
 23/9/2023,Ricardo Ramos,Charles Jourdain,2,0
-23/9/2023,Dan Argueta,Miles Johns,2,1
+23/9/2023,Dan Argueta,Miles Johns,4,1
 23/9/2023,Tim Means,Andre Fialho,1,0
 23/9/2023,Jacob Malkoun,Cody Brundage,2,0
 23/9/2023,Mohammed Usman,Jake Collier,1,0
@@ -6108,12 +6108,12 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 14/10/2023,Ashley Yoder,Emily Ducote,2,0
 21/10/2023,Islam Makhachev,Alexander Volkanovski,1,0
 21/10/2023,Kamaru Usman,Khamzat Chimaev,2,0
-21/10/2023,Magomed Ankalaev,Johnny Walker,2,1
+21/10/2023,Magomed Ankalaev,Johnny Walker,4,1
 21/10/2023,Ikram Aliskerov,Warlley Alves,1,0
 21/10/2023,Said Nurmagomedov,Muin Gafurov,1,0
 21/10/2023,Tim Elliott,Muhammad Mokaev,2,0
 21/10/2023,Mohammad Yahya,Trevor Peek,2,0
-21/10/2023,Javid Basharat,Victor Henry,2,1
+21/10/2023,Javid Basharat,Victor Henry,4,1
 21/10/2023,Abu Azaitar,Sedriques Dumas,2,0
 21/10/2023,Mike Breeden,Anshul Jubli,1,0
 21/10/2023,Nathaniel Wood,Muhammad Naimov,2,0
@@ -6154,7 +6154,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 18/11/2023,Mick Parkin,Caio Machado,1,0
 18/11/2023,Jeka Saragih,Lucas Alexander,1,0
 18/11/2023,Lucie Pudilova,Ailin Perez,2,0
-18/11/2023,Trey Ogden,Nikolas Motta,2,1
+18/11/2023,Trey Ogden,Nikolas Motta,4,1
 18/11/2023,Charles Johnson,Rafael Estevam,2,0
 02/12/2023,Beneil Dariush,Arman Tsarukyan,2,0
 02/12/2023,Jalin Turner,King Green,1,0
@@ -6218,7 +6218,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 03/2/2024,Renato Moicano,Drew Dober,1,0
 03/2/2024,Randy Brown,Muslim Salikhov,1,0
 03/2/2024,Viviane Araujo,Natalia Silva,2,0
-03/2/2024,Aliaskhab Khizriev,Makhmud Muradov,2,1
+03/2/2024,Aliaskhab Khizriev,Makhmud Muradov,4,1
 03/2/2024,Gilbert Urbina,Charles Radtke,2,0
 03/2/2024,Molly McCann,Diana Belbita,1,0
 03/2/2024,Azat Maksum,Charles Johnson,2,0
@@ -6240,7 +6240,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 10/2/2024,Max Griffin,Jeremiah Wells,1,1
 10/2/2024,Zac Pauga,Bogdan Guskov,2,0
 10/2/2024,Fernie Garcia,Hyder Amil,2,0
-10/2/2024,Daniel Marcos,Aoriqileng,2,1
+10/2/2024,Daniel Marcos,Aoriqileng,4,1
 17/2/2024,Alexander Volkanovski,Ilia Topuria,2,0
 17/2/2024,Robert Whittaker,Paulo Costa,1,0
 17/2/2024,Geoff Neal,Ian Machado Garry,2,1
@@ -6291,7 +6291,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 09/3/2024,CJ Vergara,Asu Almabayev,2,0
 09/3/2024,Joanne Wood,Maryna Moroz,1,1
 16/3/2024,Tai Tuivasa,Marcin Tybura,2,0
-16/3/2024,Bryan Battle,Ange Loosa,2,1
+16/3/2024,Bryan Battle,Ange Loosa,4,1
 16/3/2024,Ovince Saint Preux,Kennedy Nzechukwu,1,1
 16/3/2024,Christian Rodriguez,Isaac Dulgarian,1,1
 16/3/2024,Pannie Kianzad,Macy Chiasson,2,0
@@ -6470,7 +6470,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 13/7/2024,Drew Dober,Jean Silva,2,0
 13/7/2024,Gabriel Bonfim,Ange Loosa,1,0
 13/7/2024,Julian Erosa,Christian Rodriguez,1,0
-13/7/2024,Abdul Razak Alhassan,Cody Brundage,1,1
+13/7/2024,Abdul Razak Alhassan,Cody Brundage,4,1
 13/7/2024,Joshua Van,Charles Johnson,2,0
 13/7/2024,Jasmine Jasudavicius,Fatima Kline,1,0
 13/7/2024,Montel Jackson,Da'Mon Blackshear,1,0
@@ -6942,7 +6942,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 14/6/2025,Cody Garbrandt,Raoni Barcelos,2,0
 14/6/2025,Mansur Abdul-Malik,Cody Brundage,3,1
 14/6/2025,Alonzo Menifield,Oumar Sy,1,0
-14/6/2025,Paul Craig,Rodolfo Bellato,1,1
+14/6/2025,Paul Craig,Rodolfo Bellato,4,1
 14/6/2025,Michael Chiesa,Court McGee,1,0
 14/6/2025,Malcolm Wellmaker,Kris Moutinho,1,0
 14/6/2025,Cody Durden,Jose Ochoa,2,0
@@ -7083,7 +7083,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 13/9/2025,Claudio Puelles,Joaquim Silva,2,1
 13/9/2025,Tatiana Suarez,Amanda Lemos,1,0
 13/9/2025,Jesus Aguilar,Luis Gurule,1,0
-13/9/2025,Zach Reese,Sedriques Dumas,1,1
+13/9/2025,Zach Reese,Sedriques Dumas,4,1
 13/9/2025,Alessandro Costa,Alden Coria,2,0
 13/9/2025,Montse Rendon,Alice Pereira,1,1
 13/9/2025,Rodrigo Sezinando,Daniil Donchenko,2,0
@@ -7138,7 +7138,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 18/10/2025,Stephanie Luciano,Ravena Oliveira,1,0
 18/10/2025,Azamat Bekoev,Yousri Belgaroui,2,0
 18/10/2025,Melissa Croden,Tainara Lisboa,1,0
-25/10/2025,Tom Aspinall,Ciryl Gane,1,1
+25/10/2025,Tom Aspinall,Ciryl Gane,4,1
 25/10/2025,Virna Jandiroba,Mackenzie Dern,2,0
 25/10/2025,Umar Nurmagomedov,Mario Bautista,1,0
 25/10/2025,Alexander Volkov,Jailton Almeida,1,1
@@ -7274,7 +7274,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 21/2/2026,Jacobe Smith,Josiah Harrell,1,0
 21/2/2026,Zach Reese,Michel Pereira,2,1
 21/2/2026,Chidi Njokuani,Carlos Leal,2,0
-21/2/2026,Ode Osbourne,Alibi Idiris,2,1
+21/2/2026,Ode Osbourne,Alibi Idiris,4,1
 21/2/2026,Alden Coria,Luis Gurule,1,0
 21/2/2026,Nora Cornolle,Joselyne Edwards,2,0
 21/2/2026,Ramiz Brahimaj,Punahele Soriano,2,0
@@ -7440,7 +7440,7 @@ Date,Fighter 1,Fighter 2,Result,Split Dec?
 30/5/2026,Sergei Pavlovich,Tallison Teixeira,1,0
 30/5/2026,Kai Asakura,Cameron Smotherman,1,0
 30/5/2026,Jake Matthews,Carlston Harris,1,0
-30/5/2026,Alex Perez,Sumudaerji,1,1
+30/5/2026,Alex Perez,Sumudaerji,4,1
 30/5/2026,YiSak Lee,Luis Felipe Dias,2,0
 30/5/2026,Ding Meng,Jose Souza,2,1
 30/5/2026,Aoriqileng,Cody Haddon,2,0
