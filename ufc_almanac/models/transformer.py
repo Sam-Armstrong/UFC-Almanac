@@ -40,7 +40,6 @@ class TransformerModel(nn.Module):
         d_model: int = 64,
         nhead: int = 4,
         num_layers: int = 2,
-        dim_feedforward: int = 128,
         dropout: float = 0.1,
     ):
         super().__init__()
@@ -50,7 +49,7 @@ class TransformerModel(nn.Module):
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
             nhead=nhead,
-            dim_feedforward=dim_feedforward,
+            dim_feedforward=d_model * 2,
             dropout=dropout,
             batch_first=True,
             activation=nn.functional.gelu,

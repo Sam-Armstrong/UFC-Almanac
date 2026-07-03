@@ -43,7 +43,7 @@ ufc-train --model transformer --rebuild-data
 python scripts/train.py --model transformer
 ```
 
-#### Tunable parameters
+#### Parameters
 
 | Flag | Description | Default |
 |------|-------------|---------|
@@ -54,9 +54,12 @@ python scripts/train.py --model transformer
 | `--val-fraction` | Fraction of data held out for validation | `0.1` |
 | `--weight-decay` | L2 regularization strength for Adam | `1e-4` |
 | `--dropout` | Dropout probability | `0.2` |
+| `--d-model` | Transformer hidden dimension (`transformer` only) | `64` |
+| `--num-layers` | Number of transformer encoder layers (`transformer` only) | `2` |
+| `--max-fights` | Past fights per fighter / sequence length (`transformer` only) | `8` |
 | `--rebuild-data` | Regenerate training tensors from CSV files before training | off |
 
-Use `--rebuild-data` when the underlying CSV data has been updated.
+Use `--rebuild-data` when the underlying CSV data has been updated. Changing `--max-fights` also regenerates transformer training data when it does not match the saved tensors.
 
 ### Inference (predict fight outcomes)
 

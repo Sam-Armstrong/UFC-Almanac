@@ -10,6 +10,7 @@ from tqdm import tqdm
 from ufc_almanac.data import Data
 from ufc_almanac.globals import (
     CHECKPOINTS_DIR,
+    MAX_FIGHTS,
     STANDARD_TRAINING_DATA_PATH,
     TRANSFORMER_STANDARD_TRAINING_DATA_PATH,
 )
@@ -191,6 +192,8 @@ def train_transformer(
     val_fraction: float,
     weight_decay: float,
     dropout: float,
+    d_model: int,
+    num_layers: int,
 ) -> None:
     device = get_device()
     tqdm.write(f"Using device: {device}")
@@ -222,7 +225,12 @@ def train_transformer(
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
 
-    model = model(max_fights=training_data["max_fights"], dropout=dropout).to(device)
+    model = model(
+        max_fights=int(training_data["max_fights"]),
+        d_model=d_model,
+        num_layers=num_layers,
+        dropout=dropout,
+    ).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(
         model.parameters(),
@@ -327,6 +335,24 @@ def parse_args() -> argparse.Namespace:
         default=0.2,
         help="dropout probability (default: 0.2)",
     )
+    parser.add_argument(
+        "--d-model",
+        type=int,
+        default=64,
+        help="transformer hidden dimension (default: 64)",
+    )
+    parser.add_argument(
+        "--num-layers",
+        type=int,
+        default=2,
+        help="number of transformer encoder layers (default: 2)",
+    )
+    parser.add_argument(
+        "--max-fights",
+        type=int,
+        default=MAX_FIGHTS,
+        help="past fights per fighter, i.e. sequence length (default: 8)",
+    )
     return parser.parse_args()
 
 
@@ -341,23 +367,36 @@ def main() -> None:
         else STANDARD_TRAINING_DATA_PATH
     )
 
-    if args.rebuild_data or not data_path.exists():
+    if transformer_model:
+        needs_rebuild = args.rebuild_data or not data_path.exists()
+        if not needs_rebuild:
+            existing_data = load_training_data(data_path)
+            if int(existing_data["max_fights"]) != args.max_fights:
+                needs_rebuild = True
+        if needs_rebuild:
+            data_handler = Data()
+            data_handler.create_transformer_training_data(max_fights=args.max_fights)
+    elif args.rebuild_data or not data_path.exists():
         data_handler = Data()
-        if transformer_model:
-            data_handler.create_transformer_training_data()
-        else:
-            data_handler.create_standard_training_data()
+        data_handler.create_standard_training_data()
 
     training_data = load_training_data(data_path)
+    train_kwargs = {
+        "num_epochs": args.epochs,
+        "batch_size": args.batch_size,
+        "learning_rate": args.learning_rate,
+        "val_fraction": args.val_fraction,
+        "weight_decay": args.weight_decay,
+        "dropout": args.dropout,
+    }
+    if transformer_model:
+        train_kwargs["d_model"] = args.d_model
+        train_kwargs["num_layers"] = args.num_layers
+
     train_fn(
         training_data,
         resolve_model(args.model, MODELS),
-        num_epochs=args.epochs,
-        batch_size=args.batch_size,
-        learning_rate=args.learning_rate,
-        val_fraction=args.val_fraction,
-        weight_decay=args.weight_decay,
-        dropout=args.dropout,
+        **train_kwargs,
     )
 
 
