@@ -2,7 +2,7 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-from typing import Union
+from typing import Any, Union
 
 from ufc_almanac.globals import STANDARD_TRAINING_DATA_PATH
 
@@ -11,6 +11,21 @@ def load_training_data(
     path: Union[str, Path] = STANDARD_TRAINING_DATA_PATH,
 ) -> dict[str, torch.Tensor]:
     return torch.load(path, weights_only=True)
+
+
+def extract_model_config(model: nn.Module) -> dict[str, Any]:
+    """
+    Capture constructor kwargs needed to reload a trained model.
+    """
+    model_name = model.__class__.__name__
+    if model_name == "TransformerModel":
+        return {
+            "max_fights": model.max_fights,
+            "d_model": model.input_proj.out_features,
+            "num_layers": len(model.transformer.layers),
+            "dropout": model.classifier[2].p,
+        }
+    return {"dropout": model.dropout.p}
 
 
 def normalize_sequences(
@@ -53,9 +68,10 @@ def save_artifacts(
             The path to save the normalization stats to.
     """
     model_path.parent.mkdir(parents=True, exist_ok=True)
+    config = extract_model_config(model)
     torch.save(model.state_dict(), model_path)
     torch.save(
-        {"means": means, "stds": stds},
+        {"means": means, "stds": stds, "config": config},
         normalization_path,
     )
     tqdm.write(f"Saved model to {model_path}")

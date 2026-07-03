@@ -4,9 +4,14 @@ from pathlib import Path
 import torch
 from typing import Optional
 
+from ufc_almanac.inference.utils import (
+    infer_transformer_config,
+    load_model_state_dict,
+    load_normalization_artifacts,
+)
 from ufc_almanac.data import Data, pad_fight_sequence
 from ufc_almanac.helpers import get_device, resolve_checkpoint_paths, resolve_model
-from ufc_almanac.models import MODELS, TransformerModel
+from ufc_almanac.models import MODELS
 from ufc_almanac.globals import (
     INPUT_SIZE,
     LABEL_COLUMNS,
@@ -21,26 +26,53 @@ from ufc_almanac.globals import (
 class FightPredictor:
     def __init__(
         self,
-        model: torch.nn.Module,
+        model: type[torch.nn.Module],
         model_path: Optional[Path] = None,
     ) -> None:
         self.device = get_device()
-        self.is_transformer = model is TransformerModel
-        self.max_fights = self._resolve_max_fights() if self.is_transformer else MAX_FIGHTS
+        self.is_transformer = model.__name__ == "TransformerModel"
         feature_size = TRANSFORMER_FEATURE_SIZE if self.is_transformer else INPUT_SIZE
 
-        if self.is_transformer:
-            self.model = model(max_fights=self.max_fights).to(self.device)
-        else:
-            self.model = model().to(self.device)
-
         self.model_path, self.normalization_path = resolve_checkpoint_paths(
-            self.model.__class__,
+            model,
             model_path=model_path,
         )
-        self.means = torch.zeros(feature_size)
-        self.stds = torch.ones(feature_size)
-        self._load_artifacts()
+        normalization = self._load_normalization()
+        state_dict = self._load_state_dict()
+        model_kwargs = self._resolve_model_kwargs(state_dict, normalization.get("config", {}))
+        self.max_fights = model_kwargs.get("max_fights", MAX_FIGHTS)
+        self.model = model(**model_kwargs).to(self.device)
+
+        if state_dict is not None:
+            self.model.load_state_dict(state_dict)
+
+        self.means = normalization.get("means", torch.zeros(feature_size))
+        self.stds = normalization.get("stds", torch.ones(feature_size))
+
+    def _load_state_dict(self) -> Optional[dict[str, torch.Tensor]]:
+        return load_model_state_dict(self.model_path, self.device)
+
+    def _load_normalization(self) -> dict:
+        return load_normalization_artifacts(self.normalization_path, self.device)
+
+    def _resolve_model_kwargs(
+        self,
+        state_dict: Optional[dict[str, torch.Tensor]],
+        saved_config: dict,
+    ) -> dict:
+        if self.is_transformer:
+            config = infer_transformer_config(state_dict) if state_dict else {}
+            config.update(saved_config)
+            if "max_fights" not in config:
+                config["max_fights"] = self._resolve_max_fights()
+            return {
+                "max_fights": int(config["max_fights"]),
+                "d_model": int(config.get("d_model", 64)),
+                "num_layers": int(config.get("num_layers", 2)),
+                "dropout": float(config.get("dropout", 0.1)),
+            }
+
+        return {"dropout": float(saved_config.get("dropout", 0.0))}
 
     def _resolve_max_fights(self) -> int:
         training_path = Path(TRANSFORMER_STANDARD_TRAINING_DATA_PATH)
@@ -48,21 +80,6 @@ class FightPredictor:
             training_data = torch.load(training_path, weights_only=True)
             return int(training_data["max_fights"])
         return MAX_FIGHTS
-
-    def _load_artifacts(self) -> None:
-        if not self.model_path.exists() or not self.normalization_path.exists():
-            return
-
-        self.model.load_state_dict(
-            torch.load(self.model_path, map_location=self.device, weights_only=True)
-        )
-        normalization = torch.load(
-            self.normalization_path,
-            map_location=self.device,
-            weights_only=True,
-        )
-        self.means = normalization["means"]
-        self.stds = normalization["stds"]
 
     def _normalize(self, features: torch.Tensor) -> torch.Tensor:
         return (features - self.means.to(self.device)) / self.stds.to(self.device)
