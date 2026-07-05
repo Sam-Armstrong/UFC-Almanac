@@ -1,3 +1,6 @@
+import os
+
+
 FIGHTER_DATA_CSV = "data/FighterData.csv"
 RESULTS_CSV = "data/FightResults.csv"
 STATS_CSV = "data/FightStats.csv"
@@ -8,7 +11,7 @@ CHECKPOINTS_DIR = "artifacts/checkpoints"
 BLOCKED_RESOURCE_TYPES = {"image", "media", "font"}
 MIN_FIGHTS = 3
 MAX_FIGHTS = 8
-VERBOSE = False
+VERBOSE = bool(int(os.getenv("VERBOSE", 0)))
 
 FEATURE_COLUMNS = [
     "Height 1",
