@@ -135,3 +135,6 @@ __pycache__/
 *.pt
 
 artifacts/checkpoints/
+
+!artifacts/core/transformer_model.pt
+!artifacts/core/transformer_model_normalization.pt
