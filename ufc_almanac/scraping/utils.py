@@ -2,7 +2,7 @@ import datetime
 import os
 import pandas
 
-from ufc_almanac.globals import RESULTS_CSV, STATS_CSV
+from ufc_almanac.globals import RESULTS_CSV, STATS_CSV, VERBOSE
 
 
 # Local #
@@ -197,3 +197,28 @@ def parse_event_listing(soup):
             events.append((url, event_date))
 
     return events
+
+def parse_next_event(soup) -> tuple[str, datetime.date]:
+    """
+    Find the URL and date of the next upcoming UFC event.
+    """
+    for link in soup.find_all(
+        "a", href=True, attrs={"class": "b-link b-link_style_white"}
+    ):
+        try:
+            url = link["href"]
+            if "event-details" not in url: continue
+
+            parent = link.find_parent("i")
+            if parent is None: continue
+
+            date_element = parent.find("span", attrs={"class": "b-statistics__date"})
+            if date_element is None: continue
+
+            event_date = _parse_site_event_date(date_element.get_text(strip=True))
+            return url, event_date
+        except Exception as e:
+            if VERBOSE: print(f"Error parsing next event: {e}")
+            continue
+
+    raise ValueError("No next event found")
