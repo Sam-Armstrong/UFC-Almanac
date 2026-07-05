@@ -31,7 +31,6 @@ def scrape_next_event() -> UpcomingEvent:
         )
 
         next_event_url, next_event_date = parse_next_event(soup)
-        print(f"Next event: {next_event_url} on {next_event_date}")
 
         fights: list[tuple[str, str]] = []
         current_fight: list[str] = []
