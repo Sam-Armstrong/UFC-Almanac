@@ -7,11 +7,11 @@ from ufc_almanac.globals import RESULTS_CSV, STATS_CSV
 
 # Local #
 
-def _parse_csv_date(date_text):
+def _parse_csv_date(date_text: str) -> datetime.date:
     """Parse a stored fight date such as '20/11/2021'."""
     return datetime.datetime.strptime(str(date_text).strip(), "%d/%m/%Y").date()
 
-def _parse_site_event_date(date_text):
+def _parse_site_event_date(date_text: str) -> datetime.date:
     """Parse an event listing date such as 'April 07, 1995'."""
     return datetime.datetime.strptime(date_text.strip(), "%B %d, %Y").date()
 
