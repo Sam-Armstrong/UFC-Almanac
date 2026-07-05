@@ -16,3 +16,13 @@ class MissingDataException(Exception):
     def __init__(self):
         self.message = "One or more of the necessary data files is missing (FightResults.csv, FightStats.csv, and/or FighterData.csv)"
         super().__init__(self.message)
+
+
+class MissingFighterDataException(Exception):
+    """
+    Exception raised when fighter data is not found
+    """
+
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(self.message)

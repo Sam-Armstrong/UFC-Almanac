@@ -1,9 +1,8 @@
-import datetime
 import pandas
 from pathlib import Path
 import torch
 from tqdm import tqdm
-from typing import Optional, Union
+from typing import Optional
 
 from ufc_almanac.data.utils import (
     calculate_days_since,
@@ -15,7 +14,11 @@ from ufc_almanac.data.utils import (
     parse_date_sort_key,
     per_minute_stats,
 )
-from ufc_almanac.exceptions import MinFightsException, MissingDataException
+from ufc_almanac.exceptions import (
+    MinFightsException,
+    MissingDataException,
+    MissingFighterDataException,
+)
 from ufc_almanac.globals import (
     FIGHTER_DATA_CSV,
     MAX_FIGHTS,
@@ -175,10 +178,15 @@ class Data:
         Fights are ordered most-recent-first.
         """
         days_since_fight = days_since_fight_date(date)
-        fighter_data = self.fight_stats[self.fight_stats["Name"].str.contains(name)]
-        fighter_info = self.fighter_data[
-            self.fighter_data["Name"].str.contains(name)
-        ].iloc[0]
+
+        try:
+            fighter_data = self.fight_stats[self.fight_stats["Name"].str.contains(name)]
+            fighter_info = self.fighter_data[
+                self.fighter_data["Name"].str.contains(name)
+            ].iloc[0]
+        except:
+            raise MissingFighterDataException(f"Missing data for fighter {name}")
+
         height = fighter_info["Height"]
         reach = fighter_info["Reach"]
         age = fighter_info["Age"]
