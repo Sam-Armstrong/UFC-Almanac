@@ -1,0 +1,50 @@
+name: Update event predictions
+
+on:
+  schedule:
+    - cron: "0 7 * * 3"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-event-predictions
+  cancel-in-progress: false
+
+jobs:
+  predict-next-event:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install project
+        run: pip install -e ".[all]"
+
+      - name: Install Playwright browser
+        run: playwright install chromium --with-deps
+
+      - name: Predict next event and update README
+        run: python scripts/predict_next_event.py --readme README.md
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "Sam-Armstrong"
+          git config user.email "samuel_e_armstrong@yahoo.co.uk"
+          git add README.md
+
+          if git diff --staged --quiet; then
+            echo "No prediction changes to commit."
+          else
+            git commit -m "chore: update next event predictions"
+            git push
+          fi
