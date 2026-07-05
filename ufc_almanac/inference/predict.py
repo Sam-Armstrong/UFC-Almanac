@@ -134,7 +134,7 @@ class FightPredictor:
     def _probabilities_from_logits(
         self,
         logits: torch.Tensor,
-        sig_figs: int = 2,
+        sig_figs: int = 4,
     ) -> dict[str, float]:
         probabilities = torch.round(
             torch.softmax(
@@ -152,7 +152,7 @@ class FightPredictor:
         self,
         fighter1_stats: list,
         fighter2_stats: list,
-        sig_figs: int = 2,
+        sig_figs: int = 4,
     ) -> dict[str, float]:
         """
         Return win / loss / draw probabilities for fighter 1.
@@ -169,7 +169,7 @@ class FightPredictor:
         self,
         fighter1_sequence: list[list[float]],
         fighter2_sequence: list[list[float]],
-        sig_figs: int = 2,
+        sig_figs: int = 4,
     ) -> dict[str, float]:
         """
         Return win / loss / draw probabilities for fighter 1 using fight sequences.
@@ -191,7 +191,7 @@ class FightPredictor:
         fighter2: str,
         date: str,
         min_fights: Optional[int] = None,
-        sig_figs: int = 2,
+        sig_figs: int = 4,
     ) -> dict[str, float]:
         """
         Build feature vectors from fighter names and return outcome probabilities.
