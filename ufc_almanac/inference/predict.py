@@ -180,6 +180,16 @@ class FightPredictor:
     ) -> dict[str, float]:
         """
         Build feature vectors from fighter names and return outcome probabilities.
+
+        Args:
+            data: Data object containing fighter statistics
+            fighter1: Name of the first fighter
+            fighter2: Name of the second fighter
+            date: Date of the fight in format YYYY-MM-DD
+            min_fights: Minimum number of fights to consider for the prediction
+
+        Returns:
+            Dictionary containing win / loss / draw probabilities for fighter 1
         """
         if min_fights is None:
             min_fights = MIN_FIGHTS
