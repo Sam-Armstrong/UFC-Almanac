@@ -4,7 +4,7 @@ import torch.nn as nn
 from tqdm import tqdm
 from typing import Any, Union
 
-from ufc_almanac.globals import STANDARD_TRAINING_DATA_PATH
+from ufc_almanac.globals import STANDARD_TRAINING_DATA_PATH, VERBOSE
 
 
 def load_training_data(
@@ -91,5 +91,4 @@ def save_artifacts(
         {"means": means, "stds": stds, "config": config},
         normalization_path,
     )
-    tqdm.write(f"Saved model to {model_path}")
-    tqdm.write(f"Saved normalization stats to {normalization_path}")
+    if VERBOSE: tqdm.write(f"Saved checkpoint to {model_path.parent}/")
