@@ -5,6 +5,15 @@ containing the data for all UFC fights since 2010.
 Also contains code for transforming the data into formats for training machine learning models,
 and training scripts for a variety of deep learning models.
 
+## Next UFC Event Predictions
+
+
+
+The model used for these predictions is a models/transformer_model.py trained using the following command:
+```bash
+ufc-train --model transformer --path artifacts/core/transformer_model.pt --epochs 30 --dropout 0.5 --weight-decay 3e-5 --learning-rate 3e-5 --d-model 128 --val-fraction 0.1
+```
+
 ## Setup
 
 ```bash
