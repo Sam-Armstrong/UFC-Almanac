@@ -76,14 +76,7 @@ class TransformerModel(nn.Module):
         x = self.pos_encoder(x)
         mask_weights = mask.unsqueeze(-1).float()
         x = x * mask_weights
-
-        # mps does not support transformer padding masks yet
-        if x.device.type == "mps":
-            x = self.transformer(x)
-        else:
-            padding_mask = ~mask.bool()
-            x = self.transformer(x, src_key_padding_mask=padding_mask)
-
+        x = self.transformer(x)
         return (x * mask_weights).sum(dim=1) / mask_weights.sum(dim=1).clamp(min=1.0)
 
     def forward(
