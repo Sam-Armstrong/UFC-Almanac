@@ -1,11 +1,45 @@
 from pathlib import Path
 import torch
 import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 from typing import Any, Union
 
 from ufc_almanac.globals import STANDARD_TRAINING_DATA_PATH, VERBOSE
 
+
+def collect_validation_logits(
+    model: nn.Module,
+    device: torch.device,
+    data_loader: DataLoader,
+    is_transformer: bool = False,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """
+    Collect logits and labels from a validation loader for post-hoc calibration.
+    """
+    model.eval()
+    all_logits: list[torch.Tensor] = []
+    all_labels: list[torch.Tensor] = []
+
+    with torch.no_grad():
+        if is_transformer:
+            for batch in data_loader:
+                fighter1, fighter2, mask1, mask2, labels = [
+                    tensor.to(device) for tensor in batch
+                ]
+                logits = model(fighter1, fighter2, mask1, mask2)
+                all_logits.append(logits)
+                all_labels.append(labels)
+        else:
+            for batch_features, batch_labels in data_loader:
+                batch_features = batch_features.to(device)
+                batch_labels = batch_labels.to(device)
+                logits = model(batch_features)
+                all_logits.append(logits)
+                all_labels.append(batch_labels)
+
+    return torch.cat(all_logits), torch.cat(all_labels)
 
 def load_training_data(
     path: Union[str, Path] = STANDARD_TRAINING_DATA_PATH,
@@ -62,12 +96,34 @@ def normalize_sequences(
     fighter2 = (fighter2 - means) / stds
     return fighter1, fighter2, means, stds
 
+def optimize_temperature(
+    logits: torch.Tensor,
+    labels: torch.Tensor,
+) -> float:
+    """
+    Find a scalar temperature that minimizes validation NLL on held-out logits.
+    """
+    log_temperature = torch.zeros(1, device=logits.device, requires_grad=True)
+    optimizer = optim.LBFGS([log_temperature], lr=0.1, max_iter=50)
+    criterion = nn.CrossEntropyLoss()
+
+    def closure() -> torch.Tensor:
+        optimizer.zero_grad()
+        temperature = log_temperature.exp()
+        loss = criterion(logits / temperature, labels)
+        loss.backward()
+        return loss
+
+    optimizer.step(closure)
+    return log_temperature.exp().item()
+
 def save_artifacts(
     model: nn.Module,
     model_path: Union[str, Path],
     means: torch.Tensor,
     stds: torch.Tensor,
     normalization_path: Union[str, Path],
+    temperature: float | None = None,
 ) -> None:
     """
     Saves the model and normalization stats to the specified paths.
@@ -87,8 +143,8 @@ def save_artifacts(
     model_path.parent.mkdir(parents=True, exist_ok=True)
     config = extract_model_config(model)
     torch.save(model.state_dict(), model_path)
-    torch.save(
-        {"means": means, "stds": stds, "config": config},
-        normalization_path,
-    )
+    artifacts: dict[str, Any] = {"means": means, "stds": stds, "config": config}
+    if temperature is not None:
+        artifacts["temperature"] = temperature
+    torch.save(artifacts, normalization_path)
     if VERBOSE: tqdm.write(f"Saved checkpoint to {model_path.parent}/")

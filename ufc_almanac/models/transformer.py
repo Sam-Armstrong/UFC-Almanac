@@ -90,3 +90,12 @@ class TransformerModel(nn.Module):
         fighter2_embedding = self.encode_fighter(fighter2_fights, fighter2_mask)
         combined = torch.cat([fighter1_embedding, fighter2_embedding], dim=-1)
         return self.classifier(combined)
+
+
+def apply_temperature(logits: torch.Tensor, temperature: float) -> torch.Tensor:
+    """
+    Scale logits by temperature for calibrated probability estimates.
+    """
+    if temperature == 1.0:
+        return logits
+    return logits / temperature

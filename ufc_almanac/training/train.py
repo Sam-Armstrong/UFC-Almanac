@@ -17,8 +17,10 @@ from ufc_almanac.helpers import get_device, resolve_checkpoint_paths, resolve_mo
 from ufc_almanac.models import MODELS
 from ufc_almanac.training.dataset import FightSequenceDataset
 from ufc_almanac.training.utils import (
+    collect_validation_logits,
     load_training_data,
     normalize_sequences,
+    optimize_temperature,
     save_artifacts,
     temporal_train_val_split,
 )
@@ -211,6 +213,7 @@ def train_transformer(
     d_model: int,
     num_layers: int,
     model_path: Path | None = None,
+    optimize_temp: bool = False,
 ) -> None:
     device = get_device()
     tqdm.write(f"Using device: {device}")
@@ -263,6 +266,7 @@ def train_transformer(
     start_time = time.time()
     best_val_loss = float("inf")
     best_val_accuracy = 0.0
+    best_model_state: dict[str, torch.Tensor] | None = None
     saved_during_training = False
     save_after_epoch = num_epochs / 3
     epoch_bar = tqdm(range(num_epochs), desc="Training transformer", unit="epoch")
@@ -284,6 +288,11 @@ def train_transformer(
         val_loss, val_accuracy = evaluate(
             model, device, val_loader, criterion, is_transformer=True
         )
+        if val_loss < best_val_loss:
+            best_model_state = {
+                key: value.detach().clone()
+                for key, value in model.state_dict().items()
+            }
         if (epoch + 1) > save_after_epoch and val_loss < best_val_loss:
             save_artifacts(
                 model,
@@ -305,13 +314,33 @@ def train_transformer(
     tqdm.write(
         f"Best val loss: {best_val_loss:.4f}, best val accuracy: {best_val_accuracy:.2f}%"
     )
-    if not saved_during_training:
+
+    temperature = None
+    if optimize_temp:
+        if best_model_state is not None:
+            model.load_state_dict(best_model_state)
+        val_logits, val_labels = collect_validation_logits(
+            model,
+            device,
+            val_loader,
+            is_transformer=True,
+        )
+        temperature = optimize_temperature(val_logits, val_labels)
+        val_nll = nn.CrossEntropyLoss()(val_logits / temperature, val_labels).item()
+        tqdm.write(
+            f"Optimized temperature: {temperature:.4f} (val NLL: {val_nll:.4f})"
+        )
+
+    if optimize_temp or not saved_during_training:
+        if optimize_temp and best_model_state is not None:
+            model.load_state_dict(best_model_state)
         save_artifacts(
             model,
             resolved_model_path,
             means,
             stds,
             resolved_normalization_path,
+            temperature=temperature,
         )
 
 
@@ -389,6 +418,12 @@ def parse_args() -> argparse.Namespace:
         help="path to save trained model weights "
         "(default: artifacts/checkpoints/<ModelName>.pt)",
     )
+    parser.add_argument(
+        "--optimize-temp",
+        action="store_true",
+        help="optimize temperature scaling on the validation set after training "
+        "(transformer only)",
+    )
     return parser.parse_args()
 
 
@@ -437,6 +472,7 @@ def main() -> None:
     if transformer_model:
         train_kwargs["d_model"] = args.d_model
         train_kwargs["num_layers"] = args.num_layers
+        train_kwargs["optimize_temp"] = args.optimize_temp
 
     train_fn(
         training_data,

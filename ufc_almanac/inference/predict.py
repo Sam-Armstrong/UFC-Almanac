@@ -12,6 +12,7 @@ from ufc_almanac.inference.utils import (
 from ufc_almanac.data import Data, pad_fight_sequence
 from ufc_almanac.helpers import get_device, resolve_checkpoint_paths, resolve_model
 from ufc_almanac.models import MODELS
+from ufc_almanac.models.transformer import apply_temperature
 from ufc_almanac.globals import (
     INPUT_SIZE,
     LABEL_COLUMNS,
@@ -48,6 +49,7 @@ class FightPredictor:
 
         self.means = normalization.get("means", torch.zeros(feature_size))
         self.stds = normalization.get("stds", torch.ones(feature_size))
+        self.temperature = float(normalization.get("temperature", 1.0))
 
     def _load_state_dict(self) -> Optional[dict[str, torch.Tensor]]:
         return load_model_state_dict(self.model_path, self.device)
@@ -134,7 +136,13 @@ class FightPredictor:
         logits: torch.Tensor,
         sig_figs: int = 2,
     ) -> dict[str, float]:
-        probabilities = torch.round(torch.softmax(logits, dim=-1).squeeze(0), decimals=sig_figs)
+        probabilities = torch.round(
+            torch.softmax(
+                apply_temperature(logits, self.temperature),
+                dim=-1,
+            ).squeeze(0),
+            decimals=sig_figs,
+        )
         return {
             LABEL_COLUMNS[index]: probabilities[index].item()
             for index in range(NUM_CLASSES)
