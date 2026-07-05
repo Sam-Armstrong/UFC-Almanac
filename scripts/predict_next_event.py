@@ -1,4 +1,5 @@
 import argparse
+import datetime
 from pathlib import Path
 
 from ufc_almanac.data import Data
@@ -30,6 +31,9 @@ def parse_args() -> argparse.Namespace:
         help="update predictions section in the README file",
     )
     return parser.parse_args()
+
+def format_event_date(event_date: datetime.date) -> str:
+    return f"{event_date.strftime('%B')} {event_date.day}, {event_date.year}"
 
 def format_predictions_table(
     fights: list[tuple[str, str]],
@@ -93,12 +97,13 @@ def main() -> None:
             continue
 
     fights = [fight for fight in fights if fight not in skipped_fights]
-    section = format_predictions_section(str(date), fights, predictions)
+    display_date = format_event_date(date)
+    section = format_predictions_section(display_date, fights, predictions)
 
     if args.readme is not None:
         update_readme(args.readme, section)
 
-    print(f"Event date: {date}")
+    print(f"Event date: {display_date}")
     print(format_predictions_table(fights, predictions))
 
 
