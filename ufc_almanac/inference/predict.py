@@ -129,8 +129,12 @@ class FightPredictor:
         fighter2 = self._normalize(fighter2)
         return fighter1, fighter2, fighter1_mask, fighter2_mask
 
-    def _probabilities_from_logits(self, logits: torch.Tensor) -> dict[str, float]:
-        probabilities = torch.softmax(logits, dim=-1).squeeze(0)
+    def _probabilities_from_logits(
+        self,
+        logits: torch.Tensor,
+        sig_figs: int = 2,
+    ) -> dict[str, float]:
+        probabilities = torch.round(torch.softmax(logits, dim=-1).squeeze(0), decimals=sig_figs)
         return {
             LABEL_COLUMNS[index]: probabilities[index].item()
             for index in range(NUM_CLASSES)
@@ -140,6 +144,7 @@ class FightPredictor:
         self,
         fighter1_stats: list,
         fighter2_stats: list,
+        sig_figs: int = 2,
     ) -> dict[str, float]:
         """
         Return win / loss / draw probabilities for fighter 1.
@@ -150,12 +155,13 @@ class FightPredictor:
         with torch.no_grad():
             logits = self.model(features)
 
-        return self._probabilities_from_logits(logits)
+        return self._probabilities_from_logits(logits, sig_figs=sig_figs)
 
     def predict_sequences(
         self,
         fighter1_sequence: list[list[float]],
         fighter2_sequence: list[list[float]],
+        sig_figs: int = 2,
     ) -> dict[str, float]:
         """
         Return win / loss / draw probabilities for fighter 1 using fight sequences.
@@ -168,7 +174,7 @@ class FightPredictor:
         with torch.no_grad():
             logits = self.model(fighter1, fighter2, fighter1_mask, fighter2_mask)
 
-        return self._probabilities_from_logits(logits)
+        return self._probabilities_from_logits(logits, sig_figs=sig_figs)
 
     def predict_fighters(
         self,
@@ -177,6 +183,7 @@ class FightPredictor:
         fighter2: str,
         date: str,
         min_fights: Optional[int] = None,
+        sig_figs: int = 2,
     ) -> dict[str, float]:
         """
         Build feature vectors from fighter names and return outcome probabilities.
@@ -187,6 +194,7 @@ class FightPredictor:
             fighter2: Name of the second fighter
             date: Date of the fight in format YYYY-MM-DD
             min_fights: Minimum number of fights to consider for the prediction
+            sig_figs: Number of significant figures to round the probabilities to
 
         Returns:
             Dictionary containing win / loss / draw probabilities for fighter 1
@@ -207,11 +215,11 @@ class FightPredictor:
                 min_fights=min_fights,
                 max_fights=self.max_fights,
             )
-            return self.predict_sequences(fighter1_sequence, fighter2_sequence)
+            return self.predict_sequences(fighter1_sequence, fighter2_sequence, sig_figs=sig_figs)
 
         fighter1_stats = data.find_fighter_stats(fighter1, date, min_fights=min_fights)
         fighter2_stats = data.find_fighter_stats(fighter2, date, min_fights=min_fights)
-        return self.predict(fighter1_stats, fighter2_stats)
+        return self.predict(fighter1_stats, fighter2_stats, sig_figs=sig_figs)
 
 
 def parse_args() -> argparse.Namespace:
