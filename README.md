@@ -7,6 +7,18 @@ and training scripts for a variety of deep learning models.
 
 ## Next UFC Event Predictions
 
+Event date: July 11, 2026
+| Fight | Win % | Loss % | Draw % |
+| --- | --- | --- | --- |
+| Conor McGregor vs Max Holloway | 27.1% | 72.7% | 0.3% |
+| Benoit Saint Denis vs Paddy Pimblett | 54.4% | 44.8% | 0.8% |
+| Cory Sandhagen vs Mario Bautista | 42.1% | 57.3% | 0.6% |
+| Brandon Royval vs Lone'er Kavanagh | 53.6% | 46.0% | 0.4% |
+| King Green vs Terrance McKinney | 72.1% | 27.6% | 0.4% |
+| Nikita Krylov vs Robert Whittaker | 55.5% | 44.1% | 0.5% |
+| Cody Garbrandt vs Adrian Yanez | 52.2% | 47.6% | 0.3% |
+| Tracy Cortez vs Wang Cong | 53.1% | 46.1% | 0.8% |
+| Alessandro Costa vs Cody Durden | 67.2% | 32.5% | 0.3% |
 
 
 The model used for these predictions is a models/transformer_model.py trained using the following command:
