@@ -40,7 +40,7 @@ def format_predictions_table(
     predictions: list[dict[str, float]],
 ) -> str:
     lines = [
-        "| Fight | Win % | Loss % | Draw % |",
+        "| Fight | Win | Loss | Draw |",
         "| --- | --- | --- | --- |",
     ]
     for (fighter1, fighter2), result in zip(fights, predictions):
@@ -58,7 +58,8 @@ def format_predictions_section(
     fights: list[tuple[str, str]],
     predictions: list[dict[str, float]],
 ) -> str:
-    return f"Event date: {event_date}\n{format_predictions_table(fights, predictions)}"
+    table = format_predictions_table(fights, predictions)
+    return f'Event date: {event_date}\n\n<div align="center">\n\n{table}\n</div>\n'
 
 def update_readme(readme_path: Path, section_content: str) -> None:
     text = readme_path.read_text(encoding="utf-8")

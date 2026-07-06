@@ -5,10 +5,17 @@ containing the data for all UFC fights since 2010.
 Also contains code for transforming the data into formats for training machine learning models,
 and training scripts for a variety of deep learning models.
 
+<div align="center">
+  <img src="images/ufc_almanac.png" alt="UFC Almanac" width="425" />
+</div>
+
 ## Next UFC Event Predictions
 
 Event date: July 11, 2026
-| Fight | Win % | Loss % | Draw % |
+
+<div align="center">
+
+| Fight | Win | Loss | Draw |
 | --- | --- | --- | --- |
 | Conor McGregor vs Max Holloway | 27.1% | 72.7% | 0.3% |
 | Benoit Saint Denis vs Paddy Pimblett | 54.4% | 44.8% | 0.8% |
@@ -19,6 +26,8 @@ Event date: July 11, 2026
 | Cody Garbrandt vs Adrian Yanez | 52.2% | 47.6% | 0.3% |
 | Tracy Cortez vs Wang Cong | 53.1% | 46.1% | 0.8% |
 | Alessandro Costa vs Cody Durden | 67.2% | 32.5% | 0.3% |
+
+</div>
 
 
 The model used for these predictions is a models/transformer_model.py trained using the following command:
