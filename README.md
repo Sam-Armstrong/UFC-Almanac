@@ -12,6 +12,9 @@ and training scripts for a variety of deep learning models.
 ## Next UFC Event Predictions
 
 Event date: July 11, 2026
+
+<div align="center">
+
 | Fight | Win | Loss | Draw |
 | --- | --- | --- | --- |
 | Conor McGregor vs Max Holloway | 27.1% | 72.7% | 0.3% |
@@ -23,6 +26,8 @@ Event date: July 11, 2026
 | Cody Garbrandt vs Adrian Yanez | 52.2% | 47.6% | 0.3% |
 | Tracy Cortez vs Wang Cong | 53.1% | 46.1% | 0.8% |
 | Alessandro Costa vs Cody Durden | 67.2% | 32.5% | 0.3% |
+
+</div>
 
 
 The model used for these predictions is a models/transformer_model.py trained using the following command:
