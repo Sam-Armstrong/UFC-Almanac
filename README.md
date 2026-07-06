@@ -1,7 +1,7 @@
 # UFC-Almanac
 
 <div align="center">
-  <img src="images/ufc_almanac.png" alt="UFC Almanac" width="300" />
+  <img src="images/ufc_almanac.png" alt="UFC Almanac" width="400" />
 </div>
 
 A collection of datasets of UFC fight results, fight stats (both updated weekly) and fighter data (updated monthly),
