@@ -6,7 +6,7 @@ Also contains code for transforming the data into formats for training machine l
 and training scripts for a variety of deep learning models.
 
 <div align="center">
-  <img src="images/ufc_almanac.png" alt="UFC Almanac" width="400" />
+  <img src="images/ufc_almanac.png" alt="UFC Almanac" width="425" />
 </div>
 
 ## Next UFC Event Predictions
