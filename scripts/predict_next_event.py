@@ -40,7 +40,7 @@ def format_predictions_table(
     predictions: list[dict[str, float]],
 ) -> str:
     lines = [
-        "| Fight | Win % | Loss % | Draw % |",
+        "| Fight | Win | Loss | Draw |",
         "| --- | --- | --- | --- |",
     ]
     for (fighter1, fighter2), result in zip(fights, predictions):

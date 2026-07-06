@@ -1,5 +1,9 @@
 # UFC-Almanac
 
+<div align="center">
+  <img src="images/ufc_almanac.png" alt="UFC Almanac" width="300" />
+</div>
+
 A collection of datasets of UFC fight results, fight stats (both updated weekly) and fighter data (updated monthly),
 containing the data for all UFC fights since 2010.
 Also contains code for transforming the data into formats for training machine learning models,
@@ -8,7 +12,7 @@ and training scripts for a variety of deep learning models.
 ## Next UFC Event Predictions
 
 Event date: July 11, 2026
-| Fight | Win % | Loss % | Draw % |
+| Fight | Win | Loss | Draw |
 | --- | --- | --- | --- |
 | Conor McGregor vs Max Holloway | 27.1% | 72.7% | 0.3% |
 | Benoit Saint Denis vs Paddy Pimblett | 54.4% | 44.8% | 0.8% |
