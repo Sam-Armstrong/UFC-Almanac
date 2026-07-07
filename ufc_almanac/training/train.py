@@ -19,7 +19,9 @@ from ufc_almanac.models import MODELS
 from ufc_almanac.training.dataset import FightSequenceDataset
 from ufc_almanac.training.utils import (
     collect_validation_logits,
+    compute_feature_normalization,
     load_training_data,
+    normalize_features,
     normalize_sequences,
     optimize_temperature,
     save_artifacts,
@@ -147,17 +149,15 @@ def train_ff(
     features = training_data["features"]
     labels = training_data["labels"]
 
-    means = features.mean(dim=0)
-    stds = features.std(dim=0)
-    stds[stds == 0] = 1.0
-    features = (features - means) / stds
-
-    dataset = TensorDataset(features, labels)
     train_indices, val_indices = temporal_train_val_split(
-        len(dataset),
+        len(features),
         val_fraction,
         training_data.get("fight_dates"),
     )
+    means, stds = compute_feature_normalization(features[train_indices])
+    features = normalize_features(features, means, stds)
+
+    dataset = TensorDataset(features, labels)
     train_set = Subset(dataset, train_indices)
     val_set = Subset(dataset, val_indices)
 
@@ -276,11 +276,17 @@ def train_transformer(
     device = get_device()
     tqdm.write(f"Using device: {device}")
 
+    train_indices, val_indices = temporal_train_val_split(
+        len(training_data["labels"]),
+        val_fraction,
+        training_data.get("fight_dates"),
+    )
     fighter1, fighter2, means, stds = normalize_sequences(
         training_data["fighter1"],
         training_data["fighter2"],
         training_data["fighter1_mask"],
         training_data["fighter2_mask"],
+        train_indices=train_indices,
     )
     dataset = FightSequenceDataset(
         {
@@ -296,11 +302,6 @@ def train_transformer(
         }
     )
 
-    train_indices, val_indices = temporal_train_val_split(
-        len(dataset),
-        val_fraction,
-        training_data.get("fight_dates"),
-    )
     train_set = Subset(dataset, train_indices)
     val_set = Subset(dataset, val_indices)
 

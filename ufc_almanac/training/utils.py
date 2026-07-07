@@ -97,14 +97,46 @@ def extract_model_config(model: nn.Module) -> dict[str, Any]:
         }
     return {"dropout": model.dropout.p}
 
+def compute_feature_normalization(
+    features: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """
+    Compute per-feature means and standard deviations from a feature tensor.
+    """
+    means = features.mean(dim=0)
+    stds = features.std(dim=0)
+    stds[stds == 0] = 1.0
+    return means, stds
+
+
+def normalize_features(
+    features: torch.Tensor,
+    means: torch.Tensor,
+    stds: torch.Tensor,
+) -> torch.Tensor:
+    """
+    Apply precomputed normalization stats to a feature tensor.
+    """
+    return (features - means) / stds
+
+
 def normalize_sequences(
     fighter1: torch.Tensor,
     fighter2: torch.Tensor,
     fighter1_mask: torch.Tensor,
     fighter2_mask: torch.Tensor,
+    train_indices: list[int] | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    combined = torch.cat([fighter1, fighter2], dim=0)
-    combined_mask = torch.cat([fighter1_mask, fighter2_mask], dim=0)
+    if train_indices is not None:
+        fighter1_source = fighter1[train_indices]
+        fighter2_source = fighter2[train_indices]
+        mask1_source = fighter1_mask[train_indices]
+        mask2_source = fighter2_mask[train_indices]
+        combined = torch.cat([fighter1_source, fighter2_source], dim=0)
+        combined_mask = torch.cat([mask1_source, mask2_source], dim=0)
+    else:
+        combined = torch.cat([fighter1, fighter2], dim=0)
+        combined_mask = torch.cat([fighter1_mask, fighter2_mask], dim=0)
     valid_fights = combined[combined_mask.bool()]
     means = valid_fights.mean(dim=0)
     stds = valid_fights.std(dim=0)

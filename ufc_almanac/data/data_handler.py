@@ -5,8 +5,8 @@ from tqdm import tqdm
 from typing import Optional
 
 from ufc_almanac.data.utils import (
-    calculate_days_since,
     days_since_fight_date,
+    filter_fighter_rows,
     load_csv,
     load_training_data,
     opposite_label,
@@ -43,36 +43,63 @@ class Data:
         self.standard_training_data = load_training_data(standard_training_path)
         self.transformer_training_data = load_training_data(transformer_training_path)
 
+        self.standard_training_data = load_training_data(standard_training_path)
+        self.transformer_training_data = load_training_data(transformer_training_path)
+
+    def _lookup_fighter_profile(self, name: str) -> pandas.Series:
+        """
+        Return the fighter profile row for an exact name match.
+        """
+        matches = filter_fighter_rows(self.fighter_data, name)
+        if len(matches) != 1:
+            raise MissingFighterDataException(f"Missing data for fighter {name}")
+        return matches.iloc[0]
+
+    def _get_sorted_past_fights(
+        self,
+        name: str,
+        days_since_fight: int,
+        min_fights: int,
+        date: Optional[str] = None,
+    ) -> list[pandas.Series]:
+        """
+        Return a fighter's past fights prior to a given date, most-recent-first.
+        """
+        fighter_data = filter_fighter_rows(self.fight_stats, name)
+        past_fights: list[tuple[int, pandas.Series]] = []
+        for _, row in fighter_data.iterrows():
+            row_days_since = days_since_fight_date(str(row["Date"]))
+            if row_days_since > days_since_fight:
+                past_fights.append((row_days_since, row))
+
+        past_fights.sort(key=lambda item: item[0])
+        if len(past_fights) < min_fights:
+            date_suffix = f" at {date}" if date is not None else ""
+            raise MinFightsException(
+                f"Fighter {name} had fewer than {min_fights} fights{date_suffix}"
+            )
+        return [row for _, row in past_fights]
+
     def find_fighter_stats(self, name: str, date: str, min_fights: int = 3) -> list[float]:
         """
         Find the average stats of a fighter for the n most recent fights they had prior to a given date
         """
-        # calculates the number of days since the fight took place
-        if "/" in date:
-            days_since_fight = calculate_days_since(
-                date.split("/")[0], date.split("/")[1], date.split("/")[2]
-            )
-        else:
-            days_since_fight = calculate_days_since(
-                date.split("-")[2], date.split("-")[1], date.split("-")[0]
-            )
+        days_since_fight = days_since_fight_date(date)
+        fighter_info = self._lookup_fighter_profile(name)
+        past_fights = self._get_sorted_past_fights(
+            name, days_since_fight, min_fights, date=date
+        )
 
-        # collects the relevant data and information
-        fighter_data = self.fight_stats[self.fight_stats["Name"].str.contains(name)]
-        fighter_useful_data = list()
-        fighter_raw_info = self.fighter_data[
-            self.fighter_data["Name"].str.contains(name)
-        ]
-        fighter_info = fighter_raw_info.iloc[0]
         height = fighter_info["Height"]
         reach = fighter_info["Reach"]
         age = fighter_info["Age"]
-
         years_since = days_since_fight // 365
 
-        fighter_useful_data.append(height)
-        fighter_useful_data.append(reach)
-        fighter_useful_data.append(age - years_since)
+        fighter_useful_data = [
+            height,
+            reach,
+            age - years_since,
+        ]
 
         time = 0
         knockdown = 0
@@ -91,41 +118,25 @@ class Data:
         clinch_strikes_taken = 0
         ground_strikes = 0
         ground_strikes_taken = 0
-        i = 0
 
-        # finds the total stats for a fighter so they can be averaged
-        for index, row in fighter_data.iterrows():
-            date_list = str(row["Date"]).split("/")
-            day = date_list[0]
-            month = date_list[1]
-            year = date_list[2]
-            days_since = calculate_days_since(day, month, year)
-
-            if days_since > days_since_fight and i <= min_fights:
-                i += 1
-                time += int(row["Time"])
-                knockdown += int(row["Knockdowns"])
-                knockdown_taken += int(row["Knockdowns Against"])
-                sig_strikes_landed += int(row["Sig Strikes Landed"])
-                sig_strikes_attempted += int(row["Sig Strikes Attempted"])
-                sig_strikes_absorbed += int(row["Sig Strikes Absorbed"])
-                strikes_landed += int(row["Strikes Landed"])
-                strikes_attempted += int(row["Strikes Attempted"])
-                strikes_absorbed += int(row["Strikes Absorbed"])
-                takedowns += int(row["Takedowns"])
-                takedown_attempts += int(row["Takedown Attempts"])
-                got_takendown += int(row["Got Taken Down"])
-                submission_attempts += int(row["Submission Attempts"])
-                clinch_strikes += int(row["Clinch Strikes"])
-                clinch_strikes_taken += int(row["Clinch Strikes Taken"])
-                ground_strikes += int(row["Ground Strikes"])
-                ground_strikes_taken += int(row["Ground Strikes Taken"])
-
-        if i <= min_fights:
-            # doesn't allow the fighter to be compared if they have had fewer than min_fights fights
-            raise MinFightsException(
-                f"Fighter {name} had fewer than {min_fights} fights at {date}"
-            )
+        for row in past_fights[:min_fights]:
+            time += int(row["Time"])
+            knockdown += int(row["Knockdowns"])
+            knockdown_taken += int(row["Knockdowns Against"])
+            sig_strikes_landed += int(row["Sig Strikes Landed"])
+            sig_strikes_attempted += int(row["Sig Strikes Attempted"])
+            sig_strikes_absorbed += int(row["Sig Strikes Absorbed"])
+            strikes_landed += int(row["Strikes Landed"])
+            strikes_attempted += int(row["Strikes Attempted"])
+            strikes_absorbed += int(row["Strikes Absorbed"])
+            takedowns += int(row["Takedowns"])
+            takedown_attempts += int(row["Takedown Attempts"])
+            got_takendown += int(row["Got Taken Down"])
+            submission_attempts += int(row["Submission Attempts"])
+            clinch_strikes += int(row["Clinch Strikes"])
+            clinch_strikes_taken += int(row["Clinch Strikes Taken"])
+            ground_strikes += int(row["Ground Strikes"])
+            ground_strikes_taken += int(row["Ground Strikes Taken"])
 
         # calculates the stats for the fighter, averaged over the total time they have spent in fights (per minute)
         knockdowns_pm = round((knockdown / (time / 60)), 4)
@@ -182,36 +193,24 @@ class Data:
         days_gap (days between consecutive past fights, 0 for the most recent fight).
         """
         days_since_fight = days_since_fight_date(date)
-
-        try:
-            fighter_data = self.fight_stats[self.fight_stats["Name"].str.contains(name)]
-            fighter_info = self.fighter_data[
-                self.fighter_data["Name"].str.contains(name)
-            ].iloc[0]
-        except:
-            raise MissingFighterDataException(f"Missing data for fighter {name}")
+        fighter_info = self._lookup_fighter_profile(name)
+        past_fights = self._get_sorted_past_fights(
+            name,
+            days_since_fight,
+            min_fights,
+            date=date,
+        )
 
         height = fighter_info["Height"]
         reach = fighter_info["Reach"]
         age = fighter_info["Age"]
 
-        past_fights: list[tuple[int, pandas.Series]] = []
-        for _, row in fighter_data.iterrows():
-            row_days_since = days_since_fight_date(str(row["Date"]))
-            if row_days_since > days_since_fight:
-                past_fights.append((row_days_since, row))
-
-        past_fights.sort(key=lambda item: item[0])
-        if len(past_fights) < min_fights:
-            raise MinFightsException(
-                f"Fighter {name} had fewer than {min_fights} fights at {date}"
-            )
-
         sequence = []
         days_before = []
         days_gap = []
         previous_days_since = None
-        for row_days_since, row in past_fights[:max_fights]:
+        for row in past_fights[:max_fights]:
+            row_days_since = days_since_fight_date(str(row["Date"]))
             years_since = (row_days_since - days_since_fight) // 365
             fight_features = [
                 height,
