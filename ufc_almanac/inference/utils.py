@@ -7,7 +7,10 @@ def infer_transformer_config(state_dict: dict[str, torch.Tensor]) -> dict[str, i
     """
     Infer transformer architecture from a saved state dict.
     """
-    d_model = state_dict["input_proj.weight"].shape[0]
+    if "static_proj.weight" in state_dict:
+        d_model = state_dict["static_proj.weight"].shape[0]
+    else:
+        d_model = state_dict["input_proj.weight"].shape[0]
     layer_indices = [
         int(key.split(".")[2])
         for key in state_dict
