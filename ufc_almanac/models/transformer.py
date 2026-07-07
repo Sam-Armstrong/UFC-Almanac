@@ -4,9 +4,10 @@ import torch.nn as nn
 
 from ufc_almanac.globals import (
     MATCHUP_FEATURE_SIZE,
-    TRANSFORMER_FEATURE_SIZE,
     MAX_FIGHTS,
     NUM_CLASSES,
+    TRANSFORMER_FIGHT_FEATURE_SIZE,
+    TRANSFORMER_STATIC_FEATURE_SIZE,
 )
 
 DAYS_PER_YEAR = 365.25
@@ -60,15 +61,72 @@ class TemporalPositionalEncoding(nn.Module):
         return x + temporal_encoding
 
 
+class AttentionPooling(nn.Module):
+    """
+    Learned attention pooling over a masked fight sequence.
+    """
+
+    def __init__(self, d_model: int):
+        super().__init__()
+        self.score = nn.Linear(d_model, 1, bias=False)
+
+    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        scores = self.score(x).squeeze(-1)
+        scores = scores.masked_fill(mask == 0, torch.finfo(scores.dtype).min)
+        weights = torch.softmax(scores, dim=-1)
+        weights = weights * mask
+        weights = weights / weights.sum(dim=-1, keepdim=True).clamp(min=1e-6)
+        return (x * weights.unsqueeze(-1)).sum(dim=1)
+
+
+class FighterCrossAttention(nn.Module):
+    """
+    Cross-attend one fighter sequence against the other fighter's sequence.
+    """
+
+    def __init__(self, d_model: int, nhead: int, dropout: float):
+        super().__init__()
+        self.attention = nn.MultiheadAttention(
+            d_model,
+            nhead,
+            dropout=dropout,
+            batch_first=True,
+            bias=False,
+        )
+        self.norm = nn.LayerNorm(d_model)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(
+        self,
+        query_seq: torch.Tensor,
+        query_mask: torch.Tensor,
+        context_seq: torch.Tensor,
+        context_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        key_padding_mask = context_mask == 0
+        attended, _ = self.attention(
+            query_seq,
+            context_seq,
+            context_seq,
+            key_padding_mask=key_padding_mask,
+            need_weights=False,
+        )
+        attended = self.dropout(attended)
+        output = self.norm(query_seq + attended)
+        return output * query_mask.unsqueeze(-1)
+
+
 class TransformerModel(nn.Module):
     """
-    Encodes each fighter's past fights with a shared transformer encoder,
-    concatenates the pooled representations, and predicts win / loss / draw.
+    Encode each fighter's past fights with a shared transformer encoder,
+    apply cross-attention between fighters, pool with learned attention,
+    and classify using explicit interaction features.
     """
 
     def __init__(
         self,
-        TRANSFORMER_FEATURE_SIZE: int = TRANSFORMER_FEATURE_SIZE,
+        static_feature_size: int = TRANSFORMER_STATIC_FEATURE_SIZE,
+        fight_feature_size: int = TRANSFORMER_FIGHT_FEATURE_SIZE,
         max_fights: int = MAX_FIGHTS,
         num_classes: int = NUM_CLASSES,
         d_model: int = 64,
@@ -78,12 +136,15 @@ class TransformerModel(nn.Module):
     ):
         super().__init__()
         self.max_fights = max_fights
-        self.input_proj = nn.Linear(TRANSFORMER_FEATURE_SIZE, d_model)
+        self.static_feature_size = static_feature_size
+        self.fight_feature_size = fight_feature_size
+        self.static_proj = nn.Linear(static_feature_size, d_model)
+        self.fight_proj = nn.Linear(fight_feature_size, d_model)
         self.pos_encoder = TemporalPositionalEncoding(d_model)
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
             nhead=nhead,
-            dim_feedforward=d_model,
+            dim_feedforward=d_model * 4,
             dropout=dropout,
             batch_first=True,
             activation=nn.functional.gelu,
@@ -94,26 +155,30 @@ class TransformerModel(nn.Module):
             num_layers=num_layers,
             enable_nested_tensor=False,
         )
+        self.cross_attention = FighterCrossAttention(d_model, nhead, dropout)
+        self.pooling = AttentionPooling(d_model)
+        classifier_input_size = d_model * 4 + MATCHUP_FEATURE_SIZE
         self.classifier = nn.Sequential(
-            nn.Linear(d_model * 2 + MATCHUP_FEATURE_SIZE, d_model, bias=False),
+            nn.Linear(classifier_input_size, d_model, bias=False),
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(d_model, num_classes, bias=False),
         )
 
-    def encode_fighter(
+    def encode_sequence(
         self,
         fight_sequence: torch.Tensor,
         mask: torch.Tensor,
         days_before: torch.Tensor,
         days_gap: torch.Tensor,
     ) -> torch.Tensor:
-        x = self.input_proj(fight_sequence)
+        static_features = fight_sequence[:, 0, : self.static_feature_size]
+        fight_features = fight_sequence[:, :, self.static_feature_size :]
+        x = self.fight_proj(fight_features) + self.static_proj(static_features).unsqueeze(1)
         x = self.pos_encoder(x, days_before, days_gap, mask)
-        mask_weights = mask.unsqueeze(-1).float()
-        x = x * mask_weights
-        x = self.transformer(x)
-        return (x * mask_weights).sum(dim=1) / mask_weights.sum(dim=1).clamp(min=1.0)
+        x = x * mask.unsqueeze(-1)
+        padding_mask = mask == 0
+        return self.transformer(x, src_key_padding_mask=padding_mask)
 
     def forward(
         self,
@@ -127,20 +192,40 @@ class TransformerModel(nn.Module):
         fighter2_days_gap: torch.Tensor,
         matchup_features: torch.Tensor,
     ) -> torch.Tensor:
-        fighter1_embedding = self.encode_fighter(
+        encoded1 = self.encode_sequence(
             fighter1_fights,
             fighter1_mask,
             fighter1_days_before,
             fighter1_days_gap,
         )
-        fighter2_embedding = self.encode_fighter(
+        encoded2 = self.encode_sequence(
             fighter2_fights,
             fighter2_mask,
             fighter2_days_before,
             fighter2_days_gap,
         )
+        crossed1 = self.cross_attention(
+            encoded1,
+            fighter1_mask,
+            encoded2,
+            fighter2_mask,
+        )
+        crossed2 = self.cross_attention(
+            encoded2,
+            fighter2_mask,
+            encoded1,
+            fighter1_mask,
+        )
+        fighter1_embedding = self.pooling(crossed1, fighter1_mask)
+        fighter2_embedding = self.pooling(crossed2, fighter2_mask)
         combined = torch.cat(
-            [fighter1_embedding, fighter2_embedding, matchup_features],
+            [
+                fighter1_embedding,
+                fighter2_embedding,
+                fighter1_embedding - fighter2_embedding,
+                fighter1_embedding * fighter2_embedding,
+                matchup_features,
+            ],
             dim=-1,
         )
         return self.classifier(combined)
