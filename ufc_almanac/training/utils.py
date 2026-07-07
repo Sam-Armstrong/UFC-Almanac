@@ -25,10 +25,27 @@ def collect_validation_logits(
     with torch.no_grad():
         if is_transformer:
             for batch in data_loader:
-                fighter1, fighter2, mask1, mask2, labels = [
-                    tensor.to(device) for tensor in batch
-                ]
-                logits = model(fighter1, fighter2, mask1, mask2)
+                (
+                    fighter1,
+                    fighter2,
+                    mask1,
+                    mask2,
+                    days_before1,
+                    days_before2,
+                    days_gap1,
+                    days_gap2,
+                    labels,
+                ) = [tensor.to(device) for tensor in batch]
+                logits = model(
+                    fighter1,
+                    fighter2,
+                    mask1,
+                    mask2,
+                    days_before1,
+                    days_before2,
+                    days_gap1,
+                    days_gap2,
+                )
                 all_logits.append(logits)
                 all_labels.append(labels)
         else:

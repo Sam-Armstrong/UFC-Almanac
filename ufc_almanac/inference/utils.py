@@ -8,7 +8,6 @@ def infer_transformer_config(state_dict: dict[str, torch.Tensor]) -> dict[str, i
     Infer transformer architecture from a saved state dict.
     """
     d_model = state_dict["input_proj.weight"].shape[0]
-    max_fights = state_dict["pos_encoder.pe"].shape[1]
     layer_indices = [
         int(key.split(".")[2])
         for key in state_dict
@@ -16,7 +15,6 @@ def infer_transformer_config(state_dict: dict[str, torch.Tensor]) -> dict[str, i
     ]
     num_layers = max(layer_indices) + 1 if layer_indices else 2
     return {
-        "max_fights": max_fights,
         "d_model": d_model,
         "num_layers": num_layers,
     }

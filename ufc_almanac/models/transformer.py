@@ -8,22 +8,55 @@ from ufc_almanac.globals import (
     NUM_CLASSES,
 )
 
+DAYS_PER_YEAR = 365.25
 
-class PositionalEncoding(nn.Module):
 
-    def __init__(self, d_model: int, max_len: int = MAX_FIGHTS):
+def sinusoidal_encoding(values: torch.Tensor, d_model: int) -> torch.Tensor:
+    """
+    Apply sinusoidal encoding along the last dimension of values.
+
+    Args:
+        values: tensor whose last dimension is broadcast against d_model frequencies
+        d_model: encoding width
+    """
+    div_term = torch.exp(
+        torch.arange(0, d_model, 2, device=values.device, dtype=values.dtype)
+        * (-math.log(10000.0) / d_model)
+    )
+    encoding = torch.zeros(*values.shape[:-1], d_model, device=values.device, dtype=values.dtype)
+    encoding[..., 0::2] = torch.sin(values * div_term)
+    encoding[..., 1::2] = torch.cos(values * div_term)
+    return encoding
+
+
+class TemporalPositionalEncoding(nn.Module):
+    """
+    Sinusoidal encoding driven by fight timing instead of sequence index.
+
+    days_before is converted to years since the matchup; days_gap is converted to
+    years between consecutive past fights. Each signal uses half of d_model.
+    """
+
+    def __init__(self, d_model: int):
         super().__init__()
-        position = torch.arange(max_len).unsqueeze(1)
-        div_term = torch.exp(
-            torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model)
-        )
-        pe = torch.zeros(max_len, d_model)
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        self.register_buffer("pe", pe.unsqueeze(0))
+        self.d_model = d_model
+        self.before_dims = d_model // 2
+        self.gap_dims = d_model - self.before_dims
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return x + self.pe[:, : x.size(1)]
+    def forward(
+        self,
+        x: torch.Tensor,
+        days_before: torch.Tensor,
+        days_gap: torch.Tensor,
+        mask: torch.Tensor,
+    ) -> torch.Tensor:
+        years_before = (days_before / DAYS_PER_YEAR).unsqueeze(-1)
+        years_gap = (days_gap / DAYS_PER_YEAR).unsqueeze(-1)
+        before_encoding = sinusoidal_encoding(years_before, self.before_dims)
+        gap_encoding = sinusoidal_encoding(years_gap, self.gap_dims)
+        temporal_encoding = torch.cat([before_encoding, gap_encoding], dim=-1)
+        temporal_encoding = temporal_encoding * mask.unsqueeze(-1)
+        return x + temporal_encoding
 
 
 class TransformerModel(nn.Module):
@@ -45,7 +78,7 @@ class TransformerModel(nn.Module):
         super().__init__()
         self.max_fights = max_fights
         self.input_proj = nn.Linear(TRANSFORMER_FEATURE_SIZE, d_model)
-        self.pos_encoder = PositionalEncoding(d_model, max_fights)
+        self.pos_encoder = TemporalPositionalEncoding(d_model)
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
             nhead=nhead,
@@ -71,9 +104,11 @@ class TransformerModel(nn.Module):
         self,
         fight_sequence: torch.Tensor,
         mask: torch.Tensor,
+        days_before: torch.Tensor,
+        days_gap: torch.Tensor,
     ) -> torch.Tensor:
         x = self.input_proj(fight_sequence)
-        x = self.pos_encoder(x)
+        x = self.pos_encoder(x, days_before, days_gap, mask)
         mask_weights = mask.unsqueeze(-1).float()
         x = x * mask_weights
         x = self.transformer(x)
@@ -85,9 +120,23 @@ class TransformerModel(nn.Module):
         fighter2_fights: torch.Tensor,
         fighter1_mask: torch.Tensor,
         fighter2_mask: torch.Tensor,
+        fighter1_days_before: torch.Tensor,
+        fighter2_days_before: torch.Tensor,
+        fighter1_days_gap: torch.Tensor,
+        fighter2_days_gap: torch.Tensor,
     ) -> torch.Tensor:
-        fighter1_embedding = self.encode_fighter(fighter1_fights, fighter1_mask)
-        fighter2_embedding = self.encode_fighter(fighter2_fights, fighter2_mask)
+        fighter1_embedding = self.encode_fighter(
+            fighter1_fights,
+            fighter1_mask,
+            fighter1_days_before,
+            fighter1_days_gap,
+        )
+        fighter2_embedding = self.encode_fighter(
+            fighter2_fights,
+            fighter2_mask,
+            fighter2_days_before,
+            fighter2_days_gap,
+        )
         combined = torch.cat([fighter1_embedding, fighter2_embedding], dim=-1)
         return self.classifier(combined)
 
