@@ -4,6 +4,23 @@ import torch
 from typing import Union
 
 
+def normalize_fighter_name(name: str) -> str:
+    """
+    Normalize a fighter name for exact matching.
+    """
+    return str(name).strip().casefold()
+
+
+def filter_fighter_rows(dataframe: pandas.DataFrame, name: str) -> pandas.DataFrame:
+    """
+    Return rows whose fighter name matches exactly after normalization.
+    """
+    normalized_name = normalize_fighter_name(name)
+    return dataframe[
+        dataframe["Name"].map(normalize_fighter_name) == normalized_name
+    ]
+
+
 def calculate_days_since(day: str, month: str, year: str) -> int:
     """
     Calculates the days between a given date and the current date
