@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
 import time
+from typing import Any
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -96,6 +97,15 @@ def evaluate(
 
     return total_loss / total, (correct / total) * 100
 
+def _training_run_description(
+    base_desc: str,
+    run_number: int | None,
+    total_runs: int | None,
+) -> str:
+    if run_number is not None and total_runs is not None:
+        return f"{base_desc} (run {run_number}/{total_runs})"
+    return base_desc
+
 def train_ff(
     training_data: dict[str, torch.Tensor],
     model: nn.Module,
@@ -106,7 +116,10 @@ def train_ff(
     weight_decay: float,
     dropout: float,
     model_path: Path | None = None,
-) -> None:
+    save_checkpoint: bool = True,
+    run_number: int | None = None,
+    total_runs: int | None = None,
+) -> dict[str, Any]:
     """
     Train the model using the training data and cross-entropy loss.
 
@@ -167,9 +180,14 @@ def train_ff(
     start_time = time.time()
     best_val_loss = float("inf")
     best_val_accuracy = 0.0
+    best_model_state: dict[str, torch.Tensor] | None = None
     saved_during_training = False
     save_after_epoch = num_epochs / 3
-    epoch_bar = tqdm(range(num_epochs), desc="Training", unit="epoch")
+    epoch_bar = tqdm(
+        range(num_epochs),
+        desc=_training_run_description("Training", run_number, total_runs),
+        unit="epoch",
+    )
     for epoch, _ in enumerate(epoch_bar):
         model.train()
         train_loss = 0.0
@@ -188,7 +206,12 @@ def train_ff(
         val_loss, val_accuracy = evaluate(
             model, device, val_loader, criterion, is_transformer=False
         )
-        if (epoch + 1) > save_after_epoch and val_loss < best_val_loss:
+        if val_loss < best_val_loss:
+            best_model_state = {
+                key: value.detach().clone()
+                for key, value in model.state_dict().items()
+            }
+        if save_checkpoint and (epoch + 1) > save_after_epoch and val_loss < best_val_loss:
             save_artifacts(
                 model,
                 resolved_model_path,
@@ -209,7 +232,11 @@ def train_ff(
     tqdm.write(
         f"Best val loss: {best_val_loss:.4f}, best val accuracy: {best_val_accuracy:.2f}%"
     )
-    if not saved_during_training:
+
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
+
+    if save_checkpoint and not saved_during_training:
         save_artifacts(
             model,
             resolved_model_path,
@@ -217,6 +244,17 @@ def train_ff(
             stds,
             resolved_normalization_path,
         )
+
+    return {
+        "best_val_loss": best_val_loss,
+        "best_val_accuracy": best_val_accuracy,
+        "model": model,
+        "means": means,
+        "stds": stds,
+        "temperature": None,
+        "model_path": resolved_model_path,
+        "normalization_path": resolved_normalization_path,
+    }
 
 def train_transformer(
     training_data: dict[str, torch.Tensor],
@@ -231,7 +269,10 @@ def train_transformer(
     num_layers: int,
     model_path: Path | None = None,
     optimize_temp: bool = False,
-) -> None:
+    save_checkpoint: bool = True,
+    run_number: int | None = None,
+    total_runs: int | None = None,
+) -> dict[str, Any]:
     device = get_device()
     tqdm.write(f"Using device: {device}")
 
@@ -290,7 +331,11 @@ def train_transformer(
     best_model_state: dict[str, torch.Tensor] | None = None
     saved_during_training = False
     save_after_epoch = num_epochs / 3
-    epoch_bar = tqdm(range(num_epochs), desc="Training transformer", unit="epoch")
+    epoch_bar = tqdm(
+        range(num_epochs),
+        desc=_training_run_description("Training transformer", run_number, total_runs),
+        unit="epoch",
+    )
     for epoch, _ in enumerate(epoch_bar):
         model.train()
         train_loss = 0.0
@@ -331,7 +376,7 @@ def train_transformer(
                 key: value.detach().clone()
                 for key, value in model.state_dict().items()
             }
-        if (epoch + 1) > save_after_epoch and val_loss < best_val_loss:
+        if save_checkpoint and (epoch + 1) > save_after_epoch and val_loss < best_val_loss:
             save_artifacts(
                 model,
                 resolved_model_path,
@@ -354,9 +399,10 @@ def train_transformer(
     )
 
     temperature = None
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
+
     if optimize_temp:
-        if best_model_state is not None:
-            model.load_state_dict(best_model_state)
         val_logits, val_labels = collect_validation_logits(
             model,
             device,
@@ -369,9 +415,7 @@ def train_transformer(
             f"Optimized temperature: {temperature:.4f} (val NLL: {val_nll:.4f})"
         )
 
-    if optimize_temp or not saved_during_training:
-        if optimize_temp and best_model_state is not None:
-            model.load_state_dict(best_model_state)
+    if save_checkpoint and (optimize_temp or not saved_during_training):
         save_artifacts(
             model,
             resolved_model_path,
@@ -380,6 +424,17 @@ def train_transformer(
             resolved_normalization_path,
             temperature=temperature,
         )
+
+    return {
+        "best_val_loss": best_val_loss,
+        "best_val_accuracy": best_val_accuracy,
+        "model": model,
+        "means": means,
+        "stds": stds,
+        "temperature": temperature,
+        "model_path": resolved_model_path,
+        "normalization_path": resolved_normalization_path,
+    }
 
 
 def parse_args() -> argparse.Namespace:
@@ -462,11 +517,20 @@ def parse_args() -> argparse.Namespace:
         help="optimize temperature scaling on the validation set after training "
         "(transformer only)",
     )
+    parser.add_argument(
+        "--restarts",
+        type=int,
+        default=1,
+        help="number of independent training runs; when greater than 1, saves the run "
+        "with the lowest validation loss (default: 1)",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    if args.restarts < 1:
+        raise ValueError("--restarts must be at least 1")
 
     transformer_model = "transformer" in args.model.lower()
     train_fn = train_transformer if transformer_model else train_ff
@@ -516,11 +580,47 @@ def main() -> None:
         train_kwargs["num_layers"] = args.num_layers
         train_kwargs["optimize_temp"] = args.optimize_temp
 
-    train_fn(
-        training_data,
-        resolve_model(args.model, MODELS),
-        **train_kwargs,
-    )
+    model_class = resolve_model(args.model, MODELS)
+    save_checkpoint = args.restarts == 1
+    run_results: list[tuple[int, dict[str, Any]]] = []
+
+    for run_number in range(1, args.restarts + 1):
+        if args.restarts > 1:
+            tqdm.write(f"Training run {run_number}/{args.restarts}")
+        result = train_fn(
+            training_data,
+            model_class,
+            save_checkpoint=save_checkpoint,
+            run_number=run_number if args.restarts > 1 else None,
+            total_runs=args.restarts if args.restarts > 1 else None,
+            **train_kwargs,
+        )
+        run_results.append((run_number, result))
+
+    if args.restarts > 1:
+        best_run_number, best_result = min(
+            run_results,
+            key=lambda item: item[1]["best_val_loss"],
+        )
+        tqdm.write("Restart summary:")
+        for run_number, result in run_results:
+            marker = "*" if run_number == best_run_number else " "
+            tqdm.write(
+                f"{marker} Run {run_number}: val loss {result['best_val_loss']:.4f}, "
+                f"val accuracy {result['best_val_accuracy']:.2f}%"
+            )
+        tqdm.write(
+            f"Saving run {best_run_number} with lowest val loss "
+            f"({best_result['best_val_loss']:.4f})"
+        )
+        save_artifacts(
+            best_result["model"],
+            best_result["model_path"],
+            best_result["means"],
+            best_result["stds"],
+            best_result["normalization_path"],
+            temperature=best_result["temperature"],
+        )
 
 
 if __name__ == "__main__":
