@@ -10,9 +10,11 @@ from tqdm import tqdm
 
 from ufc_almanac.data import Data
 from ufc_almanac.globals import (
+    INPUT_SIZE,
     MAX_FIGHTS,
     STANDARD_TRAINING_DATA_PATH,
     TRANSFORMER_STANDARD_TRAINING_DATA_PATH,
+    TRANSFORMER_FEATURE_SIZE,
 )
 from ufc_almanac.helpers import get_device, resolve_checkpoint_paths, resolve_model
 from ufc_almanac.models import MODELS
@@ -70,6 +72,7 @@ def evaluate(
                     days_before2,
                     days_gap1,
                     days_gap2,
+                    matchup_features,
                     labels,
                 ) = [tensor.to(device) for tensor in batch]
                 logits = model(
@@ -81,6 +84,7 @@ def evaluate(
                     days_before2,
                     days_gap1,
                     days_gap2,
+                    matchup_features,
                 )
                 total_loss += criterion(logits, labels).item() * labels.size(0)
                 predictions = logits.argmax(dim=1)
@@ -288,6 +292,15 @@ def train_transformer(
         training_data["fighter2_mask"],
         train_indices=train_indices,
     )
+    matchup_features = training_data["matchup_features"]
+    matchup_means, matchup_stds = compute_feature_normalization(
+        matchup_features[train_indices]
+    )
+    matchup_features = normalize_features(
+        matchup_features,
+        matchup_means,
+        matchup_stds,
+    )
     dataset = FightSequenceDataset(
         {
             "fighter1": fighter1,
@@ -298,6 +311,7 @@ def train_transformer(
             "fighter2_days_before": training_data["fighter2_days_before"],
             "fighter1_days_gap": training_data["fighter1_days_gap"],
             "fighter2_days_gap": training_data["fighter2_days_gap"],
+            "matchup_features": matchup_features,
             "labels": training_data["labels"],
         }
     )
@@ -351,6 +365,7 @@ def train_transformer(
                 days_before2,
                 days_gap1,
                 days_gap2,
+                matchup_features,
                 labels,
             ) = [tensor.to(device) for tensor in batch]
             optimizer.zero_grad()
@@ -363,6 +378,7 @@ def train_transformer(
                 days_before2,
                 days_gap1,
                 days_gap2,
+                matchup_features,
             )
             loss = criterion(logits, labels)
             loss.backward()
@@ -384,6 +400,8 @@ def train_transformer(
                 means,
                 stds,
                 resolved_normalization_path,
+                matchup_means=matchup_means,
+                matchup_stds=matchup_stds,
             )
             saved_during_training = True
         best_val_loss = min(best_val_loss, val_loss)
@@ -424,6 +442,8 @@ def train_transformer(
             stds,
             resolved_normalization_path,
             temperature=temperature,
+            matchup_means=matchup_means,
+            matchup_stds=matchup_stds,
         )
 
     return {
@@ -432,6 +452,8 @@ def train_transformer(
         "model": model,
         "means": means,
         "stds": stds,
+        "matchup_means": matchup_means,
+        "matchup_stds": matchup_stds,
         "temperature": temperature,
         "model_path": resolved_model_path,
         "normalization_path": resolved_normalization_path,
@@ -551,6 +573,10 @@ def main() -> None:
                 needs_rebuild = True
             if "fighter1_days_before" not in existing_data:
                 needs_rebuild = True
+            if "matchup_features" not in existing_data:
+                needs_rebuild = True
+            if existing_data["fighter1"].shape[-1] != TRANSFORMER_FEATURE_SIZE:
+                needs_rebuild = True
         if needs_rebuild:
             data_handler = Data()
             data_handler.create_transformer_training_data(max_fights=args.max_fights)
@@ -560,7 +586,7 @@ def main() -> None:
             existing_data = load_training_data(data_path)
             if "fight_dates" not in existing_data:
                 needs_rebuild = True
-            if "fighter1_days_before" not in existing_data:
+            if existing_data["features"].shape[1] != INPUT_SIZE:
                 needs_rebuild = True
         if needs_rebuild:
             data_handler = Data()
@@ -621,6 +647,8 @@ def main() -> None:
             best_result["stds"],
             best_result["normalization_path"],
             temperature=best_result["temperature"],
+            matchup_means=best_result.get("matchup_means"),
+            matchup_stds=best_result.get("matchup_stds"),
         )
 
 

@@ -16,6 +16,7 @@ from ufc_almanac.models.transformer import apply_temperature
 from ufc_almanac.globals import (
     INPUT_SIZE,
     LABEL_COLUMNS,
+    MATCHUP_FEATURE_SIZE,
     MAX_FIGHTS,
     MIN_FIGHTS,
     NUM_CLASSES,
@@ -49,6 +50,14 @@ class FightPredictor:
 
         self.means = normalization.get("means", torch.zeros(feature_size))
         self.stds = normalization.get("stds", torch.ones(feature_size))
+        self.matchup_means = normalization.get(
+            "matchup_means",
+            torch.zeros(MATCHUP_FEATURE_SIZE),
+        )
+        self.matchup_stds = normalization.get(
+            "matchup_stds",
+            torch.ones(MATCHUP_FEATURE_SIZE),
+        )
         self.temperature = float(normalization.get("temperature", 1.0))
 
     def _load_state_dict(self) -> Optional[dict[str, torch.Tensor]]:
@@ -86,13 +95,20 @@ class FightPredictor:
     def _normalize(self, features: torch.Tensor) -> torch.Tensor:
         return (features - self.means.to(self.device)) / self.stds.to(self.device)
 
+    def _normalize_matchup(self, matchup_features: torch.Tensor) -> torch.Tensor:
+        return (
+            (matchup_features - self.matchup_means.to(self.device))
+            / self.matchup_stds.to(self.device)
+        )
+
     def _prepare_features(
         self,
         fighter1_stats: list,
         fighter2_stats: list,
+        matchup_features: list,
     ) -> torch.Tensor:
         features = torch.tensor(
-            fighter1_stats + fighter2_stats,
+            fighter1_stats + fighter2_stats + matchup_features,
             dtype=torch.float32,
             device=self.device,
         ).unsqueeze(0)
@@ -106,7 +122,18 @@ class FightPredictor:
         fighter2_days_before: list[float],
         fighter1_days_gap: list[float],
         fighter2_days_gap: list[float],
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        matchup_features: list[float],
+    ) -> tuple[
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+    ]:
         padded1, mask1 = pad_fight_sequence(fighter1_sequence, self.max_fights)
         padded2, mask2 = pad_fight_sequence(fighter2_sequence, self.max_fights)
         padded_days_before1 = pad_temporal_sequence(fighter1_days_before, self.max_fights)
@@ -157,6 +184,12 @@ class FightPredictor:
 
         fighter1 = self._normalize(fighter1)
         fighter2 = self._normalize(fighter2)
+        matchup = torch.tensor(
+            matchup_features,
+            dtype=torch.float32,
+            device=self.device,
+        ).unsqueeze(0)
+        matchup = self._normalize_matchup(matchup)
         return (
             fighter1,
             fighter2,
@@ -166,6 +199,7 @@ class FightPredictor:
             fighter2_days_before,
             fighter1_days_gap,
             fighter2_days_gap,
+            matchup,
         )
 
     def _probabilities_from_logits(
@@ -189,13 +223,18 @@ class FightPredictor:
         self,
         fighter1_stats: list,
         fighter2_stats: list,
+        matchup_features: list,
         sig_figs: int = 4,
     ) -> dict[str, float]:
         """
         Return win / loss / draw probabilities for fighter 1.
         """
         self.model.eval()
-        features = self._prepare_features(fighter1_stats, fighter2_stats)
+        features = self._prepare_features(
+            fighter1_stats,
+            fighter2_stats,
+            matchup_features,
+        )
 
         with torch.no_grad():
             logits = self.model(features)
@@ -210,6 +249,7 @@ class FightPredictor:
         fighter2_days_before: list[float],
         fighter1_days_gap: list[float],
         fighter2_days_gap: list[float],
+        matchup_features: list[float],
         sig_figs: int = 4,
     ) -> dict[str, float]:
         """
@@ -225,6 +265,7 @@ class FightPredictor:
             fighter2_days_before_tensor,
             fighter1_days_gap_tensor,
             fighter2_days_gap_tensor,
+            matchup_tensor,
         ) = self._prepare_transformer_features(
             fighter1_sequence,
             fighter2_sequence,
@@ -232,6 +273,7 @@ class FightPredictor:
             fighter2_days_before,
             fighter1_days_gap,
             fighter2_days_gap,
+            matchup_features,
         )
 
         with torch.no_grad():
@@ -244,6 +286,7 @@ class FightPredictor:
                 fighter2_days_before_tensor,
                 fighter1_days_gap_tensor,
                 fighter2_days_gap_tensor,
+                matchup_tensor,
             )
 
         return self._probabilities_from_logits(logits, sig_figs=sig_figs)
@@ -291,6 +334,13 @@ class FightPredictor:
                     max_fights=self.max_fights,
                 )
             )
+            matchup_features = data.get_matchup_features(
+                fighter1,
+                fighter2,
+                date,
+                days_before1=fighter1_days_before,
+                days_before2=fighter2_days_before,
+            )
             return self.predict_sequences(
                 fighter1_sequence,
                 fighter2_sequence,
@@ -298,12 +348,25 @@ class FightPredictor:
                 fighter2_days_before,
                 fighter1_days_gap,
                 fighter2_days_gap,
+                matchup_features,
                 sig_figs=sig_figs,
             )
 
         fighter1_stats = data.find_fighter_stats(fighter1, date, min_fights=min_fights)
         fighter2_stats = data.find_fighter_stats(fighter2, date, min_fights=min_fights)
-        return self.predict(fighter1_stats, fighter2_stats, sig_figs=sig_figs)
+        matchup_features = data.get_matchup_features(
+            fighter1,
+            fighter2,
+            date,
+            days_before1=[fighter1_stats[-1]],
+            days_before2=[fighter2_stats[-1]],
+        )
+        return self.predict(
+            fighter1_stats,
+            fighter2_stats,
+            matchup_features,
+            sig_figs=sig_figs,
+        )
 
 
 def parse_args() -> argparse.Namespace:

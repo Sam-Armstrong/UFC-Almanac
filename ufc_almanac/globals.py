@@ -12,57 +12,10 @@ BLOCKED_RESOURCE_TYPES = {"image", "media", "font"}
 MIN_FIGHTS = 3
 MAX_FIGHTS = 8
 VERBOSE = bool(int(os.getenv("VERBOSE", 0)))
+WEIGHT_CLASS_MISMATCH_THRESHOLD = 10
+RECENCY_HALF_LIFE_DAYS = 365.0
 
-FEATURE_COLUMNS = [
-    "Height 1",
-    "Reach 1",
-    "Age 1",
-    "Knockdowns PM 1",
-    "Gets Knocked Down PM 1",
-    "Sig Strikes Landed PM 1",
-    "Sig Strikes Attempted PM 1",
-    "Sig Strikes Absorbed PM 1",
-    "Strikes Landed PM 1",
-    "Strikes Attempted PM 1",
-    "Strikes Absorbed PM 1",
-    "Strike Accuracy 1",
-    "Takedowns PM 1",
-    "Takedown Attempts PM 1",
-    "Gets Taken Down PM 1",
-    "Submission Attempts PM 1",
-    "Clinch Strikes PM 1",
-    "Clinch Strikes Taken PM 1",
-    "Grounds Strikes PM 1",
-    "Ground Strikes Taken PM 1",
-    "Height 2",
-    "Reach 2",
-    "Age 2",
-    "Knockdowns PM 2",
-    "Gets Knocked Down PM 2",
-    "Sig Strikes Landed PM 2",
-    "Sig Strikes Attempted PM 2",
-    "Sig Strikes Absorbed PM 2",
-    "Strikes Landed PM 2",
-    "Strikes Attempted PM 2",
-    "Strikes Absorbed PM 2",
-    "Strike Accuracy 2",
-    "Takedowns PM 2",
-    "Takedown Attempts PM 2",
-    "Gets Taken Down PM 2",
-    "Submission Attempts PM 2",
-    "Clinch Strikes PM 2",
-    "Clinch Strikes Taken PM 2",
-    "Grounds Strikes PM 2",
-    "Ground Strikes Taken PM 2",
-]
-LABEL_COLUMNS = ["Win", "Loss", "Draw"]
-INPUT_SIZE = len(FEATURE_COLUMNS)
-NUM_CLASSES = len(LABEL_COLUMNS)
-
-TRANSFORMER_FEATURE_COLUMNS = [
-    "Height",
-    "Reach",
-    "Age",
+STAT_COLUMNS = [
     "Knockdowns PM",
     "Gets Knocked Down PM",
     "Sig Strikes Landed PM",
@@ -81,4 +34,60 @@ TRANSFORMER_FEATURE_COLUMNS = [
     "Ground Strikes PM",
     "Ground Strikes Taken PM",
 ]
+
+FIGHTER_PROFILE_COLUMNS = [
+    "Height",
+    "Reach",
+    "Age",
+    "Weight",
+    "Stance",
+]
+
+FIGHTER_FORM_COLUMNS = [
+    "Recent Win Rate",
+    "Avg Opponent Win Rate",
+    "Days Since Last Fight",
+]
+
+FIGHTER_FEATURE_COLUMNS = (
+    FIGHTER_PROFILE_COLUMNS
+    + STAT_COLUMNS
+    + FIGHTER_FORM_COLUMNS
+)
+
+MATCHUP_FEATURE_COLUMNS = [
+    "Reach Diff",
+    "Height Diff",
+    "Age Diff",
+    "Weight Diff",
+    "Weight Class Mismatch",
+    "Stance Mismatch",
+    "Days Since Last Fight 1",
+    "Days Since Last Fight 2",
+]
+
+FEATURE_COLUMNS = (
+    [f"{column} 1" for column in FIGHTER_FEATURE_COLUMNS]
+    + [f"{column} 2" for column in FIGHTER_FEATURE_COLUMNS]
+    + MATCHUP_FEATURE_COLUMNS
+)
+LABEL_COLUMNS = ["Win", "Loss", "Draw"]
+INPUT_SIZE = len(FEATURE_COLUMNS)
+NUM_CLASSES = len(LABEL_COLUMNS)
+MATCHUP_FEATURE_SIZE = len(MATCHUP_FEATURE_COLUMNS)
+
+TRANSFORMER_OPPONENT_COLUMNS = [
+    "Opponent Height",
+    "Opponent Reach",
+    "Opponent Age",
+    "Opponent Weight",
+    "Opponent Win Rate",
+    "Fight Outcome",
+]
+
+TRANSFORMER_FEATURE_COLUMNS = (
+    FIGHTER_PROFILE_COLUMNS
+    + STAT_COLUMNS
+    + TRANSFORMER_OPPONENT_COLUMNS
+)
 TRANSFORMER_FEATURE_SIZE = len(TRANSFORMER_FEATURE_COLUMNS)

@@ -34,6 +34,7 @@ def collect_validation_logits(
                     days_before2,
                     days_gap1,
                     days_gap2,
+                    matchup_features,
                     labels,
                 ) = [tensor.to(device) for tensor in batch]
                 logits = model(
@@ -45,6 +46,7 @@ def collect_validation_logits(
                     days_before2,
                     days_gap1,
                     days_gap2,
+                    matchup_features,
                 )
                 all_logits.append(logits)
                 all_labels.append(labels)
@@ -173,6 +175,8 @@ def save_artifacts(
     stds: torch.Tensor,
     normalization_path: Union[str, Path],
     temperature: float | None = None,
+    matchup_means: torch.Tensor | None = None,
+    matchup_stds: torch.Tensor | None = None,
 ) -> None:
     """
     Saves the model and normalization stats to the specified paths.
@@ -195,5 +199,8 @@ def save_artifacts(
     artifacts: dict[str, Any] = {"means": means, "stds": stds, "config": config}
     if temperature is not None:
         artifacts["temperature"] = temperature
+    if matchup_means is not None and matchup_stds is not None:
+        artifacts["matchup_means"] = matchup_means
+        artifacts["matchup_stds"] = matchup_stds
     torch.save(artifacts, normalization_path)
     if VERBOSE: tqdm.write(f"Saved checkpoint to {model_path.parent}/")

@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 
 from ufc_almanac.globals import (
+    MATCHUP_FEATURE_SIZE,
     TRANSFORMER_FEATURE_SIZE,
     MAX_FIGHTS,
     NUM_CLASSES,
@@ -94,7 +95,7 @@ class TransformerModel(nn.Module):
             enable_nested_tensor=False,
         )
         self.classifier = nn.Sequential(
-            nn.Linear(d_model * 2, d_model, bias=False),
+            nn.Linear(d_model * 2 + MATCHUP_FEATURE_SIZE, d_model, bias=False),
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(d_model, num_classes, bias=False),
@@ -124,6 +125,7 @@ class TransformerModel(nn.Module):
         fighter2_days_before: torch.Tensor,
         fighter1_days_gap: torch.Tensor,
         fighter2_days_gap: torch.Tensor,
+        matchup_features: torch.Tensor,
     ) -> torch.Tensor:
         fighter1_embedding = self.encode_fighter(
             fighter1_fights,
@@ -137,7 +139,10 @@ class TransformerModel(nn.Module):
             fighter2_days_before,
             fighter2_days_gap,
         )
-        combined = torch.cat([fighter1_embedding, fighter2_embedding], dim=-1)
+        combined = torch.cat(
+            [fighter1_embedding, fighter2_embedding, matchup_features],
+            dim=-1,
+        )
         return self.classifier(combined)
 
 

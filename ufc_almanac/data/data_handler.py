@@ -5,15 +5,21 @@ from tqdm import tqdm
 from typing import Optional
 
 from ufc_almanac.data.utils import (
+    build_matchup_features,
     days_since_fight_date,
+    fight_outcome_for_fighter,
     filter_fighter_rows,
+    fighter_age_at_fight,
     load_csv,
     load_training_data,
+    normalize_fighter_name,
+    opponent_name_for_fighter,
     opposite_label,
     pad_fight_sequence,
     pad_temporal_sequence,
     parse_date_sort_key,
     per_minute_stats,
+    recency_weight,
 )
 from ufc_almanac.exceptions import (
     MinFightsException,
@@ -42,9 +48,115 @@ class Data:
         self.fighter_data = load_csv(FIGHTER_DATA_CSV)
         self.standard_training_data = load_training_data(standard_training_path)
         self.transformer_training_data = load_training_data(transformer_training_path)
+        self._fight_result_index: dict[tuple[str, str], pandas.Series] = {}
+        self._fighter_history: dict[str, list[tuple[int, float]]] = {}
+        self._indexes_built = False
 
-        self.standard_training_data = load_training_data(standard_training_path)
-        self.transformer_training_data = load_training_data(transformer_training_path)
+    def _ensure_indexes(self) -> None:
+        if self._indexes_built:
+            return
+
+        for _, row in self.fight_results.iterrows():
+            result = int(row["Result"])
+            if result == 4:
+                continue
+
+            date = str(row["Date"])
+            row_days_since = days_since_fight_date(date)
+            outcome_fighter1 = fight_outcome_for_fighter(row, str(row["Fighter 1"]).strip())
+            outcome_fighter2 = fight_outcome_for_fighter(row, str(row["Fighter 2"]).strip())
+
+            for fighter_name, outcome in (
+                (str(row["Fighter 1"]).strip(), outcome_fighter1),
+                (str(row["Fighter 2"]).strip(), outcome_fighter2),
+            ):
+                normalized_name = normalize_fighter_name(fighter_name)
+                self._fight_result_index[(normalized_name, date)] = row
+                self._fighter_history.setdefault(normalized_name, []).append(
+                    (row_days_since, outcome)
+                )
+
+        for outcomes in self._fighter_history.values():
+            outcomes.sort(key=lambda item: item[0])
+
+        self._indexes_built = True
+
+    def _lookup_fight_result(self, name: str, date: str) -> pandas.Series | None:
+        self._ensure_indexes()
+        return self._fight_result_index.get((normalize_fighter_name(name), date))
+
+    def _fighter_win_rate_before(self, name: str, days_since_cutoff: int) -> float:
+        self._ensure_indexes()
+        history = self._fighter_history.get(normalize_fighter_name(name), [])
+        wins = 0.0
+        losses = 0.0
+        for row_days_since, outcome in history:
+            if row_days_since <= days_since_cutoff:
+                continue
+            if outcome == 1.0:
+                wins += 1.0
+            elif outcome == 0.0:
+                losses += 1.0
+        return wins / max(1.0, wins + losses)
+
+    def _safe_lookup_fighter_profile(self, name: str) -> pandas.Series | None:
+        try:
+            return self._lookup_fighter_profile(name)
+        except MissingFighterDataException:
+            return None
+
+    def _opponent_context_for_past_fight(
+        self,
+        fighter_name: str,
+        fight_date: str,
+        days_since_fight: int,
+    ) -> list[float]:
+        fight_row = self._lookup_fight_result(fighter_name, fight_date)
+        if fight_row is None:
+            return [0.0] * 6
+
+        opponent_name = opponent_name_for_fighter(fight_row, fighter_name)
+        opponent_profile = self._safe_lookup_fighter_profile(opponent_name)
+        fight_days_since = days_since_fight_date(fight_date)
+        outcome = fight_outcome_for_fighter(fight_row, fighter_name)
+
+        if opponent_profile is None:
+            return [0.0, 0.0, 0.0, 0.0, 0.0, outcome]
+
+        return [
+            float(opponent_profile["Height"]),
+            float(opponent_profile["Reach"]),
+            fighter_age_at_fight(
+                float(opponent_profile["Age"]),
+                fight_days_since,
+                days_since_fight,
+            ),
+            float(opponent_profile["Weight"]),
+            self._fighter_win_rate_before(opponent_name, fight_days_since),
+            outcome,
+        ]
+
+    def get_matchup_features(
+        self,
+        name1: str,
+        name2: str,
+        date: str,
+        days_before1: list[float] | None = None,
+        days_before2: list[float] | None = None,
+    ) -> list[float]:
+        """
+        Build matchup-relative features for two fighters at a given date.
+        """
+        days_since_fight = days_since_fight_date(date)
+        fighter1_profile = self._lookup_fighter_profile(name1)
+        fighter2_profile = self._lookup_fighter_profile(name2)
+        return build_matchup_features(
+            fighter1_profile,
+            fighter2_profile,
+            days_since_fight,
+            days_before1=days_before1,
+            days_before2=days_before2,
+        )
 
     def _lookup_fighter_profile(self, name: str) -> pandas.Series:
         """
@@ -82,99 +194,70 @@ class Data:
 
     def find_fighter_stats(self, name: str, date: str, min_fights: int = 3) -> list[float]:
         """
-        Find the average stats of a fighter for the n most recent fights they had prior to a given date
+        Find recency-weighted average stats for a fighter's most recent prior fights.
         """
         days_since_fight = days_since_fight_date(date)
         fighter_info = self._lookup_fighter_profile(name)
         past_fights = self._get_sorted_past_fights(
             name, days_since_fight, min_fights, date=date
         )
+        recent_fights = past_fights[:min_fights]
 
-        height = fighter_info["Height"]
-        reach = fighter_info["Reach"]
-        age = fighter_info["Age"]
+        height = float(fighter_info["Height"])
+        reach = float(fighter_info["Reach"])
+        weight = float(fighter_info["Weight"])
+        stance = float(fighter_info["Stance"])
         years_since = days_since_fight // 365
 
         fighter_useful_data = [
             height,
             reach,
-            age - years_since,
+            float(fighter_info["Age"] - years_since),
+            weight,
+            stance,
         ]
 
-        time = 0
-        knockdown = 0
-        knockdown_taken = 0
-        sig_strikes_landed = 0
-        sig_strikes_attempted = 0
-        sig_strikes_absorbed = 0
-        strikes_landed = 0
-        strikes_attempted = 0
-        strikes_absorbed = 0
-        takedowns = 0
-        takedown_attempts = 0
-        got_takendown = 0
-        submission_attempts = 0
-        clinch_strikes = 0
-        clinch_strikes_taken = 0
-        ground_strikes = 0
-        ground_strikes_taken = 0
+        weighted_stats: list[float] = []
+        total_weight = 0.0
+        recent_win_rate_weight = 0.0
+        opponent_win_rate_weight = 0.0
+        days_since_last_fight = 0.0
 
-        for row in past_fights[:min_fights]:
-            time += int(row["Time"])
-            knockdown += int(row["Knockdowns"])
-            knockdown_taken += int(row["Knockdowns Against"])
-            sig_strikes_landed += int(row["Sig Strikes Landed"])
-            sig_strikes_attempted += int(row["Sig Strikes Attempted"])
-            sig_strikes_absorbed += int(row["Sig Strikes Absorbed"])
-            strikes_landed += int(row["Strikes Landed"])
-            strikes_attempted += int(row["Strikes Attempted"])
-            strikes_absorbed += int(row["Strikes Absorbed"])
-            takedowns += int(row["Takedowns"])
-            takedown_attempts += int(row["Takedown Attempts"])
-            got_takendown += int(row["Got Taken Down"])
-            submission_attempts += int(row["Submission Attempts"])
-            clinch_strikes += int(row["Clinch Strikes"])
-            clinch_strikes_taken += int(row["Clinch Strikes Taken"])
-            ground_strikes += int(row["Ground Strikes"])
-            ground_strikes_taken += int(row["Ground Strikes Taken"])
+        for index, row in enumerate(recent_fights):
+            row_days_since = days_since_fight_date(str(row["Date"]))
+            days_before = float(row_days_since - days_since_fight)
+            weight_value = recency_weight(days_before)
+            if index == 0:
+                days_since_last_fight = days_before
 
-        # calculates the stats for the fighter, averaged over the total time they have spent in fights (per minute)
-        knockdowns_pm = round((knockdown / (time / 60)), 4)
-        gets_knockeddown_pm = round((knockdown_taken / (time / 60)), 4)
-        sig_strikes_landed_pm = round((sig_strikes_landed / (time / 60)), 4)
-        sig_strikes_attempted_pm = round((sig_strikes_attempted / (time / 60)), 4)
-        sig_strikes_absorbed_pm = round((sig_strikes_absorbed / (time / 60)), 4)
-        strikes_landed_pm = round((strikes_landed / (time / 60)), 4)
-        strikes_attempted_pm = round((strikes_attempted / (time / 60)), 4)
-        strikes_absorbed_pm = round((strikes_absorbed / (time / 60)), 4)
-        strike_accuracy = round((strikes_landed / strikes_attempted), 4)
-        takedowns_pm = round((takedowns / (time / 60)), 4)
-        takedown_attempts_pm = round((takedown_attempts / (time / 60)), 4)
-        gets_takendown_pm = round((got_takendown / (time / 60)), 4)
-        submission_attempts_pm = round((submission_attempts / (time / 60)), 4)
-        clinch_strikes_pm = round((clinch_strikes / (time / 60)), 4)
-        clinch_strikes_taken_pm = round((clinch_strikes_taken / (time / 60)), 4)
-        ground_strikes_pm = round((ground_strikes / (time / 60)), 4)
-        ground_strikes_taken_pm = round((ground_strikes_taken / (time / 60)), 4)
+            fight_row = self._lookup_fight_result(name, str(row["Date"]))
+            if fight_row is not None:
+                outcome = fight_outcome_for_fighter(fight_row, name)
+                recent_win_rate_weight += outcome * weight_value
+                opponent_name = opponent_name_for_fighter(fight_row, name)
+                opponent_win_rate = self._fighter_win_rate_before(
+                    opponent_name,
+                    row_days_since,
+                )
+                opponent_win_rate_weight += opponent_win_rate * weight_value
 
-        # adds all of the averaged stats to a list
-        fighter_useful_data.append(knockdowns_pm)
-        fighter_useful_data.append(gets_knockeddown_pm)
-        fighter_useful_data.append(sig_strikes_landed_pm)
-        fighter_useful_data.append(sig_strikes_attempted_pm)
-        fighter_useful_data.append(sig_strikes_absorbed_pm)
-        fighter_useful_data.append(strikes_landed_pm)
-        fighter_useful_data.append(strikes_attempted_pm)
-        fighter_useful_data.append(strikes_absorbed_pm)
-        fighter_useful_data.append(strike_accuracy)
-        fighter_useful_data.append(takedowns_pm)
-        fighter_useful_data.append(takedown_attempts_pm)
-        fighter_useful_data.append(gets_takendown_pm)
-        fighter_useful_data.append(submission_attempts_pm)
-        fighter_useful_data.append(clinch_strikes_pm)
-        fighter_useful_data.append(clinch_strikes_taken_pm)
-        fighter_useful_data.append(ground_strikes_pm)
-        fighter_useful_data.append(ground_strikes_taken_pm)
+            if not weighted_stats:
+                weighted_stats = [0.0] * len(per_minute_stats(row))
+            for stat_index, stat_value in enumerate(per_minute_stats(row)):
+                weighted_stats[stat_index] += stat_value * weight_value
+            total_weight += weight_value
+
+        if total_weight == 0.0:
+            raise MinFightsException(
+                f"Fighter {name} had fewer than {min_fights} fights at {date}"
+            )
+
+        fighter_useful_data.extend(
+            round(stat / total_weight, 4) for stat in weighted_stats
+        )
+        fighter_useful_data.append(round(recent_win_rate_weight / total_weight, 4))
+        fighter_useful_data.append(round(opponent_win_rate_weight / total_weight, 4))
+        fighter_useful_data.append(days_since_last_fight)
 
         return fighter_useful_data
 
@@ -201,22 +284,32 @@ class Data:
             date=date,
         )
 
-        height = fighter_info["Height"]
-        reach = fighter_info["Reach"]
-        age = fighter_info["Age"]
+        height = float(fighter_info["Height"])
+        reach = float(fighter_info["Reach"])
+        age = float(fighter_info["Age"])
+        weight = float(fighter_info["Weight"])
+        stance = float(fighter_info["Stance"])
 
         sequence = []
         days_before = []
         days_gap = []
         previous_days_since = None
         for row in past_fights[:max_fights]:
-            row_days_since = days_since_fight_date(str(row["Date"]))
+            fight_date = str(row["Date"])
+            row_days_since = days_since_fight_date(fight_date)
             years_since = (row_days_since - days_since_fight) // 365
             fight_features = [
                 height,
                 reach,
                 age - years_since,
+                weight,
+                stance,
                 *per_minute_stats(row),
+                *self._opponent_context_for_past_fight(
+                    name,
+                    fight_date,
+                    days_since_fight,
+                ),
             ]
             sequence.append(fight_features)
             days_before.append(float(row_days_since - days_since_fight))
@@ -263,6 +356,7 @@ class Data:
         fighter2_days_before = []
         fighter1_days_gap = []
         fighter2_days_gap = []
+        matchup_features = []
         labels = []
         fight_dates = []
 
@@ -298,6 +392,13 @@ class Data:
             label = result - 1
             opp_label = opposite_label(result)
             date_key = parse_date_sort_key(date)
+            matchup = self.get_matchup_features(
+                name1,
+                name2,
+                date,
+                days_before1=days_before1,
+                days_before2=days_before2,
+            )
 
             for (
                 seq1,
@@ -307,9 +408,37 @@ class Data:
                 gap1,
                 gap2,
                 sample_label,
+                sample_matchup,
             ) in (
-                (sequence1, sequence2, days_before1, days_before2, days_gap1, days_gap2, label),
-                (sequence2, sequence1, days_before2, days_before1, days_gap2, days_gap1, opp_label),
+                (
+                    sequence1,
+                    sequence2,
+                    days_before1,
+                    days_before2,
+                    days_gap1,
+                    days_gap2,
+                    label,
+                    matchup,
+                ),
+                (
+                    sequence2,
+                    sequence1,
+                    days_before2,
+                    days_before1,
+                    days_gap2,
+                    days_gap1,
+                    opp_label,
+                    [
+                        -matchup[0],
+                        -matchup[1],
+                        -matchup[2],
+                        -matchup[3],
+                        matchup[4],
+                        matchup[5],
+                        matchup[7],
+                        matchup[6],
+                    ],
+                ),
             ):
                 padded1, mask1 = pad_fight_sequence(seq1, max_fights)
                 padded2, mask2 = pad_fight_sequence(seq2, max_fights)
@@ -321,6 +450,7 @@ class Data:
                 fighter2_days_before.append(pad_temporal_sequence(before2, max_fights))
                 fighter1_days_gap.append(pad_temporal_sequence(gap1, max_fights))
                 fighter2_days_gap.append(pad_temporal_sequence(gap2, max_fights))
+                matchup_features.append(sample_matchup)
                 labels.append(sample_label)
                 fight_dates.append(date_key)
 
@@ -340,6 +470,7 @@ class Data:
                 ),
                 "fighter1_days_gap": torch.tensor(fighter1_days_gap, dtype=torch.float32),
                 "fighter2_days_gap": torch.tensor(fighter2_days_gap, dtype=torch.float32),
+                "matchup_features": torch.tensor(matchup_features, dtype=torch.float32),
                 "labels": torch.tensor(labels, dtype=torch.long),
                 "fight_dates": torch.tensor(fight_dates, dtype=torch.long),
                 "max_fights": max_fights,
@@ -412,13 +543,32 @@ class Data:
                 label = result - 1
                 opp_label = opposite_label(result)
                 date_key = parse_date_sort_key(date)
+                matchup = self.get_matchup_features(
+                    name1,
+                    name2,
+                    date,
+                    days_before1=[fighter1_useful_data[-1]],
+                    days_before2=[fighter2_useful_data[-1]],
+                )
 
-                features.append(fighter1_useful_data + fighter2_useful_data)
+                features.append(fighter1_useful_data + fighter2_useful_data + matchup)
                 labels.append(label)
                 fight_dates.append(date_key)
 
-                # reversed sample to help the model generalise/reduce overfitting
-                features.append(fighter2_useful_data + fighter1_useful_data)
+                features.append(
+                    fighter2_useful_data
+                    + fighter1_useful_data
+                    + [
+                        -matchup[0],
+                        -matchup[1],
+                        -matchup[2],
+                        -matchup[3],
+                        matchup[4],
+                        matchup[5],
+                        matchup[7],
+                        matchup[6],
+                    ]
+                )
                 labels.append(opp_label)
                 fight_dates.append(date_key)
 
