@@ -11,6 +11,7 @@ from ufc_almanac.data.utils import (
     load_training_data,
     opposite_label,
     pad_fight_sequence,
+    pad_temporal_sequence,
     parse_date_sort_key,
     per_minute_stats,
 )
@@ -172,10 +173,13 @@ class Data:
         date: str,
         min_fights: int = MIN_FIGHTS,
         max_fights: int = MAX_FIGHTS,
-    ) -> list[list[float]]:
+    ) -> tuple[list[list[float]], list[float], list[float]]:
         """
         Return per-fight feature vectors for a fighter's past fights prior to a given date.
         Fights are ordered most-recent-first.
+
+        Also returns days_before (days from each past fight to the given date) and
+        days_gap (days between consecutive past fights, 0 for the most recent fight).
         """
         days_since_fight = days_since_fight_date(date)
 
@@ -204,6 +208,9 @@ class Data:
             )
 
         sequence = []
+        days_before = []
+        days_gap = []
+        previous_days_since = None
         for row_days_since, row in past_fights[:max_fights]:
             years_since = (row_days_since - days_since_fight) // 365
             fight_features = [
@@ -213,8 +220,14 @@ class Data:
                 *per_minute_stats(row),
             ]
             sequence.append(fight_features)
+            days_before.append(float(row_days_since - days_since_fight))
+            if previous_days_since is None:
+                days_gap.append(0.0)
+            else:
+                days_gap.append(float(row_days_since - previous_days_since))
+            previous_days_since = row_days_since
 
-        return sequence
+        return sequence, days_before, days_gap
 
     def create_transformer_training_data(
         self,
@@ -247,6 +260,10 @@ class Data:
         fighter2_sequences = []
         fighter1_masks = []
         fighter2_masks = []
+        fighter1_days_before = []
+        fighter2_days_before = []
+        fighter1_days_gap = []
+        fighter2_days_gap = []
         labels = []
         fight_dates = []
 
@@ -268,10 +285,10 @@ class Data:
             if result == 4: continue
 
             try:
-                sequence1 = self.get_fight_sequence(
+                sequence1, days_before1, days_gap1 = self.get_fight_sequence(
                     name1, date, min_fights, max_fights
                 )
-                sequence2 = self.get_fight_sequence(
+                sequence2, days_before2, days_gap2 = self.get_fight_sequence(
                     name2, date, min_fights, max_fights
                 )
             except Exception as e:
@@ -283,9 +300,17 @@ class Data:
             opp_label = opposite_label(result)
             date_key = parse_date_sort_key(date)
 
-            for seq1, seq2, sample_label in (
-                (sequence1, sequence2, label),
-                (sequence2, sequence1, opp_label),
+            for (
+                seq1,
+                seq2,
+                before1,
+                before2,
+                gap1,
+                gap2,
+                sample_label,
+            ) in (
+                (sequence1, sequence2, days_before1, days_before2, days_gap1, days_gap2, label),
+                (sequence2, sequence1, days_before2, days_before1, days_gap2, days_gap1, opp_label),
             ):
                 padded1, mask1 = pad_fight_sequence(seq1, max_fights)
                 padded2, mask2 = pad_fight_sequence(seq2, max_fights)
@@ -293,6 +318,10 @@ class Data:
                 fighter2_sequences.append(padded2)
                 fighter1_masks.append(mask1)
                 fighter2_masks.append(mask2)
+                fighter1_days_before.append(pad_temporal_sequence(before1, max_fights))
+                fighter2_days_before.append(pad_temporal_sequence(before2, max_fights))
+                fighter1_days_gap.append(pad_temporal_sequence(gap1, max_fights))
+                fighter2_days_gap.append(pad_temporal_sequence(gap2, max_fights))
                 labels.append(sample_label)
                 fight_dates.append(date_key)
 
@@ -304,6 +333,14 @@ class Data:
                 "fighter2": torch.tensor(fighter2_sequences, dtype=torch.float32),
                 "fighter1_mask": torch.tensor(fighter1_masks, dtype=torch.float32),
                 "fighter2_mask": torch.tensor(fighter2_masks, dtype=torch.float32),
+                "fighter1_days_before": torch.tensor(
+                    fighter1_days_before, dtype=torch.float32
+                ),
+                "fighter2_days_before": torch.tensor(
+                    fighter2_days_before, dtype=torch.float32
+                ),
+                "fighter1_days_gap": torch.tensor(fighter1_days_gap, dtype=torch.float32),
+                "fighter2_days_gap": torch.tensor(fighter2_days_gap, dtype=torch.float32),
                 "labels": torch.tensor(labels, dtype=torch.long),
                 "fight_dates": torch.tensor(fight_dates, dtype=torch.long),
                 "max_fights": max_fights,

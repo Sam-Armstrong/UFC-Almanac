@@ -9,6 +9,10 @@ class FightSequenceDataset(Dataset):
         self.fighter2 = data["fighter2"]
         self.fighter1_mask = data["fighter1_mask"]
         self.fighter2_mask = data["fighter2_mask"]
+        self.fighter1_days_before = data["fighter1_days_before"]
+        self.fighter2_days_before = data["fighter2_days_before"]
+        self.fighter1_days_gap = data["fighter1_days_gap"]
+        self.fighter2_days_gap = data["fighter2_days_gap"]
         self.labels = data["labels"]
 
     def __len__(self) -> int:
@@ -20,5 +24,9 @@ class FightSequenceDataset(Dataset):
             self.fighter2[index],
             self.fighter1_mask[index],
             self.fighter2_mask[index],
+            self.fighter1_days_before[index],
+            self.fighter2_days_before[index],
+            self.fighter1_days_gap[index],
+            self.fighter2_days_gap[index],
             self.labels[index],
         )

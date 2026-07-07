@@ -64,6 +64,15 @@ def pad_fight_sequence(
         mask[index] = 1.0
     return padded, mask
 
+def pad_temporal_sequence(
+    values: list[float],
+    max_fights: int,
+) -> list[float]:
+    padded = [0.0] * max_fights
+    for index, value in enumerate(values[:max_fights]):
+        padded[index] = value
+    return padded
+
 def parse_date_sort_key(date: str) -> int:
     """
     Return a YYYYMMDD integer for chronological sorting of fight dates.

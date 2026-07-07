@@ -58,10 +58,27 @@ def evaluate(
     with torch.no_grad():
         if is_transformer:
             for batch in data_loader:
-                fighter1, fighter2, mask1, mask2, labels = [
-                    tensor.to(device) for tensor in batch
-                ]
-                logits = model(fighter1, fighter2, mask1, mask2)
+                (
+                    fighter1,
+                    fighter2,
+                    mask1,
+                    mask2,
+                    days_before1,
+                    days_before2,
+                    days_gap1,
+                    days_gap2,
+                    labels,
+                ) = [tensor.to(device) for tensor in batch]
+                logits = model(
+                    fighter1,
+                    fighter2,
+                    mask1,
+                    mask2,
+                    days_before1,
+                    days_before2,
+                    days_gap1,
+                    days_gap2,
+                )
                 total_loss += criterion(logits, labels).item() * labels.size(0)
                 predictions = logits.argmax(dim=1)
                 correct += (predictions == labels).sum().item()
@@ -230,6 +247,10 @@ def train_transformer(
             "fighter2": fighter2,
             "fighter1_mask": training_data["fighter1_mask"],
             "fighter2_mask": training_data["fighter2_mask"],
+            "fighter1_days_before": training_data["fighter1_days_before"],
+            "fighter2_days_before": training_data["fighter2_days_before"],
+            "fighter1_days_gap": training_data["fighter1_days_gap"],
+            "fighter2_days_gap": training_data["fighter2_days_gap"],
             "labels": training_data["labels"],
         }
     )
@@ -275,11 +296,28 @@ def train_transformer(
         train_loss = 0.0
 
         for batch in train_loader:
-            fighter1, fighter2, mask1, mask2, labels = [
-                tensor.to(device) for tensor in batch
-            ]
+            (
+                fighter1,
+                fighter2,
+                mask1,
+                mask2,
+                days_before1,
+                days_before2,
+                days_gap1,
+                days_gap2,
+                labels,
+            ) = [tensor.to(device) for tensor in batch]
             optimizer.zero_grad()
-            logits = model(fighter1, fighter2, mask1, mask2)
+            logits = model(
+                fighter1,
+                fighter2,
+                mask1,
+                mask2,
+                days_before1,
+                days_before2,
+                days_gap1,
+                days_gap2,
+            )
             loss = criterion(logits, labels)
             loss.backward()
             optimizer.step()
@@ -446,6 +484,8 @@ def main() -> None:
                 needs_rebuild = True
             if "fight_dates" not in existing_data:
                 needs_rebuild = True
+            if "fighter1_days_before" not in existing_data:
+                needs_rebuild = True
         if needs_rebuild:
             data_handler = Data()
             data_handler.create_transformer_training_data(max_fights=args.max_fights)
@@ -454,6 +494,8 @@ def main() -> None:
         if not needs_rebuild:
             existing_data = load_training_data(data_path)
             if "fight_dates" not in existing_data:
+                needs_rebuild = True
+            if "fighter1_days_before" not in existing_data:
                 needs_rebuild = True
         if needs_rebuild:
             data_handler = Data()

@@ -9,7 +9,7 @@ from ufc_almanac.inference.utils import (
     load_model_state_dict,
     load_normalization_artifacts,
 )
-from ufc_almanac.data import Data, pad_fight_sequence
+from ufc_almanac.data import Data, pad_fight_sequence, pad_temporal_sequence
 from ufc_almanac.helpers import get_device, resolve_checkpoint_paths, resolve_model
 from ufc_almanac.models import MODELS
 from ufc_almanac.models.transformer import apply_temperature
@@ -102,9 +102,17 @@ class FightPredictor:
         self,
         fighter1_sequence: list[list[float]],
         fighter2_sequence: list[list[float]],
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        fighter1_days_before: list[float],
+        fighter2_days_before: list[float],
+        fighter1_days_gap: list[float],
+        fighter2_days_gap: list[float],
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         padded1, mask1 = pad_fight_sequence(fighter1_sequence, self.max_fights)
         padded2, mask2 = pad_fight_sequence(fighter2_sequence, self.max_fights)
+        padded_days_before1 = pad_temporal_sequence(fighter1_days_before, self.max_fights)
+        padded_days_before2 = pad_temporal_sequence(fighter2_days_before, self.max_fights)
+        padded_days_gap1 = pad_temporal_sequence(fighter1_days_gap, self.max_fights)
+        padded_days_gap2 = pad_temporal_sequence(fighter2_days_gap, self.max_fights)
 
         fighter1 = torch.tensor(
             padded1,
@@ -126,10 +134,39 @@ class FightPredictor:
             dtype=torch.float32,
             device=self.device,
         ).unsqueeze(0)
+        fighter1_days_before = torch.tensor(
+            padded_days_before1,
+            dtype=torch.float32,
+            device=self.device,
+        ).unsqueeze(0)
+        fighter2_days_before = torch.tensor(
+            padded_days_before2,
+            dtype=torch.float32,
+            device=self.device,
+        ).unsqueeze(0)
+        fighter1_days_gap = torch.tensor(
+            padded_days_gap1,
+            dtype=torch.float32,
+            device=self.device,
+        ).unsqueeze(0)
+        fighter2_days_gap = torch.tensor(
+            padded_days_gap2,
+            dtype=torch.float32,
+            device=self.device,
+        ).unsqueeze(0)
 
         fighter1 = self._normalize(fighter1)
         fighter2 = self._normalize(fighter2)
-        return fighter1, fighter2, fighter1_mask, fighter2_mask
+        return (
+            fighter1,
+            fighter2,
+            fighter1_mask,
+            fighter2_mask,
+            fighter1_days_before,
+            fighter2_days_before,
+            fighter1_days_gap,
+            fighter2_days_gap,
+        )
 
     def _probabilities_from_logits(
         self,
@@ -169,18 +206,45 @@ class FightPredictor:
         self,
         fighter1_sequence: list[list[float]],
         fighter2_sequence: list[list[float]],
+        fighter1_days_before: list[float],
+        fighter2_days_before: list[float],
+        fighter1_days_gap: list[float],
+        fighter2_days_gap: list[float],
         sig_figs: int = 4,
     ) -> dict[str, float]:
         """
         Return win / loss / draw probabilities for fighter 1 using fight sequences.
         """
         self.model.eval()
-        fighter1, fighter2, fighter1_mask, fighter2_mask = (
-            self._prepare_transformer_features(fighter1_sequence, fighter2_sequence)
+        (
+            fighter1,
+            fighter2,
+            fighter1_mask,
+            fighter2_mask,
+            fighter1_days_before_tensor,
+            fighter2_days_before_tensor,
+            fighter1_days_gap_tensor,
+            fighter2_days_gap_tensor,
+        ) = self._prepare_transformer_features(
+            fighter1_sequence,
+            fighter2_sequence,
+            fighter1_days_before,
+            fighter2_days_before,
+            fighter1_days_gap,
+            fighter2_days_gap,
         )
 
         with torch.no_grad():
-            logits = self.model(fighter1, fighter2, fighter1_mask, fighter2_mask)
+            logits = self.model(
+                fighter1,
+                fighter2,
+                fighter1_mask,
+                fighter2_mask,
+                fighter1_days_before_tensor,
+                fighter2_days_before_tensor,
+                fighter1_days_gap_tensor,
+                fighter2_days_gap_tensor,
+            )
 
         return self._probabilities_from_logits(logits, sig_figs=sig_figs)
 
@@ -211,19 +275,31 @@ class FightPredictor:
             min_fights = MIN_FIGHTS
 
         if self.is_transformer:
-            fighter1_sequence = data.get_fight_sequence(
-                fighter1,
-                date,
-                min_fights=min_fights,
-                max_fights=self.max_fights,
+            fighter1_sequence, fighter1_days_before, fighter1_days_gap = (
+                data.get_fight_sequence(
+                    fighter1,
+                    date,
+                    min_fights=min_fights,
+                    max_fights=self.max_fights,
+                )
             )
-            fighter2_sequence = data.get_fight_sequence(
-                fighter2,
-                date,
-                min_fights=min_fights,
-                max_fights=self.max_fights,
+            fighter2_sequence, fighter2_days_before, fighter2_days_gap = (
+                data.get_fight_sequence(
+                    fighter2,
+                    date,
+                    min_fights=min_fights,
+                    max_fights=self.max_fights,
+                )
             )
-            return self.predict_sequences(fighter1_sequence, fighter2_sequence, sig_figs=sig_figs)
+            return self.predict_sequences(
+                fighter1_sequence,
+                fighter2_sequence,
+                fighter1_days_before,
+                fighter2_days_before,
+                fighter1_days_gap,
+                fighter2_days_gap,
+                sig_figs=sig_figs,
+            )
 
         fighter1_stats = data.find_fighter_stats(fighter1, date, min_fights=min_fights)
         fighter2_stats = data.find_fighter_stats(fighter2, date, min_fights=min_fights)
