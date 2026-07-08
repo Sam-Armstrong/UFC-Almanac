@@ -17,15 +17,15 @@ Event date: July 11, 2026
 
 | Fight | Win | Loss | Draw |
 | --- | --- | --- | --- |
-| Conor McGregor vs Max Holloway | 27.1% | 72.7% | 0.3% |
-| Benoit Saint Denis vs Paddy Pimblett | 54.4% | 44.8% | 0.8% |
-| Cory Sandhagen vs Mario Bautista | 42.1% | 57.3% | 0.6% |
-| Brandon Royval vs Lone'er Kavanagh | 53.6% | 46.0% | 0.4% |
-| King Green vs Terrance McKinney | 72.1% | 27.6% | 0.4% |
-| Nikita Krylov vs Robert Whittaker | 55.5% | 44.1% | 0.5% |
-| Cody Garbrandt vs Adrian Yanez | 52.2% | 47.6% | 0.3% |
-| Tracy Cortez vs Wang Cong | 53.1% | 46.1% | 0.8% |
-| Alessandro Costa vs Cody Durden | 67.2% | 32.5% | 0.3% |
+| Conor McGregor vs Max Holloway | 19.6% | 80.1% | 0.3% |
+| Benoit Saint Denis vs Paddy Pimblett | 61.1% | 38.7% | 0.2% |
+| Cory Sandhagen vs Mario Bautista | 41.1% | 58.6% | 0.2% |
+| Brandon Royval vs Lone'er Kavanagh | 48.3% | 51.5% | 0.2% |
+| King Green vs Terrance McKinney | 61.8% | 37.9% | 0.2% |
+| Nikita Krylov vs Robert Whittaker | 42.6% | 57.2% | 0.2% |
+| Cody Garbrandt vs Adrian Yanez | 50.0% | 49.8% | 0.2% |
+| Tracy Cortez vs Wang Cong | 36.5% | 63.2% | 0.3% |
+| Alessandro Costa vs Cody Durden | 70.6% | 29.2% | 0.2% |
 
 </div>
 
