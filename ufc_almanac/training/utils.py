@@ -16,7 +16,7 @@ def collect_validation_logits(
     is_transformer: bool = False,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """
-    Collect logits and labels from a validation loader for post-hoc calibration.
+    Collect logits and labels from a validation loader for post-training calibration.
     """
     model.eval()
     all_logits: list[torch.Tensor] = []
@@ -60,42 +60,25 @@ def collect_validation_logits(
 
     return torch.cat(all_logits), torch.cat(all_labels)
 
-
 def compute_brier_score(logits: torch.Tensor, labels: torch.Tensor) -> float:
     """
     Compute the multiclass Brier score for predicted probabilities.
-    Lower is better.
     """
     probabilities = torch.softmax(logits, dim=-1)
     num_classes = probabilities.size(-1)
     one_hot = torch.nn.functional.one_hot(labels, num_classes=num_classes).float()
     return ((probabilities - one_hot) ** 2).sum(dim=-1).mean().item()
 
-
-def load_training_data(
-    path: Union[str, Path] = STANDARD_TRAINING_DATA_PATH,
-) -> dict[str, torch.Tensor]:
-    return torch.load(path, weights_only=True)
-
-def temporal_train_val_split(
-    num_samples: int,
-    val_fraction: float,
-    fight_dates: torch.Tensor | None = None,
-) -> tuple[list[int], list[int]]:
+def compute_feature_normalization(
+    features: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
     """
-    Split sample indices into train and validation sets.
-
-    Validation is the n most recent samples by fight date, where
-    n = max(1, int(num_samples * val_fraction)).
+    Compute per-feature means and standard deviations from a feature tensor.
     """
-    val_size = max(1, int(num_samples * val_fraction))
-    if fight_dates is not None:
-        sorted_indices = fight_dates.argsort(stable=True).tolist()
-    else:
-        sorted_indices = list(range(num_samples))
-    train_indices = sorted_indices[:-val_size]
-    val_indices = sorted_indices[-val_size:]
-    return train_indices, val_indices
+    means = features.mean(dim=0)
+    stds = features.std(dim=0)
+    stds[stds == 0] = 1.0
+    return means, stds
 
 def extract_model_config(model: nn.Module) -> dict[str, Any]:
     """
@@ -111,17 +94,10 @@ def extract_model_config(model: nn.Module) -> dict[str, Any]:
         }
     return {"dropout": model.dropout.p}
 
-def compute_feature_normalization(
-    features: torch.Tensor,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """
-    Compute per-feature means and standard deviations from a feature tensor.
-    """
-    means = features.mean(dim=0)
-    stds = features.std(dim=0)
-    stds[stds == 0] = 1.0
-    return means, stds
-
+def load_training_data(
+    path: Union[str, Path] = STANDARD_TRAINING_DATA_PATH,
+) -> dict[str, torch.Tensor]:
+    return torch.load(path, weights_only=True)
 
 def normalize_features(
     features: torch.Tensor,
@@ -133,7 +109,6 @@ def normalize_features(
     """
     return (features - means) / stds
 
-
 def normalize_sequences(
     fighter1: torch.Tensor,
     fighter2: torch.Tensor,
@@ -141,6 +116,9 @@ def normalize_sequences(
     fighter2_mask: torch.Tensor,
     train_indices: list[int] | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """
+    Normalize a sequence of fighter features and masks.
+    """
     if train_indices is not None:
         fighter1_source = fighter1[train_indices]
         fighter2_source = fighter2[train_indices]
@@ -164,7 +142,7 @@ def optimize_temperature(
     labels: torch.Tensor,
 ) -> float:
     """
-    Find a scalar temperature that minimizes validation NLL on held-out logits.
+    Find a scalar temperature that minimizes validation negative log likelihood.
     """
     log_temperature = torch.zeros(1, device=logits.device, requires_grad=True)
     optimizer = optim.LBFGS([log_temperature], lr=0.1, max_iter=50)
@@ -204,6 +182,12 @@ def save_artifacts(
             The standard deviations of the features.
         normalization_path: Union[str, Path]
             The path to save the normalization stats to.
+        temperature: float | None
+            The temperature to use for temperature scaling.
+        matchup_means: torch.Tensor | None
+            The means of the matchup features.
+        matchup_stds: torch.Tensor | None
+            The standard deviations of the matchup features.
     """
     model_path.parent.mkdir(parents=True, exist_ok=True)
     config = extract_model_config(model)
@@ -216,3 +200,23 @@ def save_artifacts(
         artifacts["matchup_stds"] = matchup_stds
     torch.save(artifacts, normalization_path)
     if VERBOSE: tqdm.write(f"Saved checkpoint to {model_path.parent}/")
+
+def temporal_train_val_split(
+    num_samples: int,
+    val_fraction: float,
+    fight_dates: torch.Tensor | None = None,
+) -> tuple[list[int], list[int]]:
+    """
+    Split sample indices into train and validation sets.
+
+    Validation is the n most recent samples by fight date, where
+    n = max(1, int(num_samples * val_fraction)).
+    """
+    val_size = max(1, int(num_samples * val_fraction))
+    if fight_dates is not None:
+        sorted_indices = fight_dates.argsort(stable=True).tolist()
+    else:
+        sorted_indices = list(range(num_samples))
+    train_indices = sorted_indices[:-val_size]
+    val_indices = sorted_indices[-val_size:]
+    return train_indices, val_indices
