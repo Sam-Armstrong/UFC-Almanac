@@ -40,6 +40,9 @@ from ufc_almanac.globals import (
 
 class Data:
     def __init__(self):
+        """
+        Load and process UFC fight data.
+        """
         standard_training_path = Path(STANDARD_TRAINING_DATA_PATH)
         transformer_training_path = Path(TRANSFORMER_STANDARD_TRAINING_DATA_PATH)
 
@@ -52,7 +55,13 @@ class Data:
         self._fighter_history: dict[str, list[tuple[int, float]]] = {}
         self._indexes_built = False
 
+
+    # Private methods
+
     def _ensure_indexes(self) -> None:
+        """
+        Build fight result and fighter history indexes (on first use) to speed up lookups.
+        """
         if self._indexes_built:
             return
 
@@ -81,11 +90,10 @@ class Data:
 
         self._indexes_built = True
 
-    def _lookup_fight_result(self, name: str, date: str) -> pandas.Series | None:
-        self._ensure_indexes()
-        return self._fight_result_index.get((normalize_fighter_name(name), date))
-
     def _fighter_win_rate_before(self, name: str, days_since_cutoff: int) -> float:
+        """
+        Return a fighter's win rate from fights that occurred before a days-since cutoff.
+        """
         self._ensure_indexes()
         history = self._fighter_history.get(normalize_fighter_name(name), [])
         wins = 0.0
@@ -99,11 +107,48 @@ class Data:
                 losses += 1.0
         return wins / max(1.0, wins + losses)
 
-    def _safe_lookup_fighter_profile(self, name: str) -> pandas.Series | None:
-        try:
-            return self._lookup_fighter_profile(name)
-        except MissingFighterDataException:
-            return None
+    def _get_sorted_past_fights(
+        self,
+        name: str,
+        days_since_fight: int,
+        min_fights: int,
+        date: Optional[str] = None,
+    ) -> list[pandas.Series]:
+        """
+        Return a fighter's past fights prior to a given date, in most recent first order.
+        """
+        fighter_data = filter_fighter_rows(self.fight_stats, name)
+        past_fights: list[tuple[int, pandas.Series]] = []
+        for _, row in fighter_data.iterrows():
+            row_days_since = days_since_fight_date(str(row["Date"]))
+            if row_days_since > days_since_fight:
+                past_fights.append((row_days_since, row))
+
+        past_fights.sort(key=lambda item: item[0])
+        if len(past_fights) < min_fights:
+            date_suffix = f" at {date}" if date is not None else ""
+            raise MinFightsException(
+                f"Fighter {name} had fewer than {min_fights} fights{date_suffix}"
+            )
+        return [row for _, row in past_fights]
+
+    def _lookup_fight_result(self, name: str, date: str) -> pandas.Series | None:
+        """
+        Return the fight result row for a fighter on a given date, or None if not found.
+        """
+        self._ensure_indexes()
+        return self._fight_result_index.get((normalize_fighter_name(name), date))
+
+    def _lookup_fighter_profile(self, name: str) -> pandas.Series:
+        """
+        Return the fighter profile row for an exact name match.
+
+        Raises MissingFighterDataException if the fighter is not found.
+        """
+        matches = filter_fighter_rows(self.fighter_data, name)
+        if len(matches) != 1:
+            raise MissingFighterDataException(f"Missing data for fighter {name}")
+        return matches.iloc[0]
 
     def _opponent_context_for_past_fight(
         self,
@@ -111,6 +156,12 @@ class Data:
         fight_date: str,
         days_since_fight: int,
     ) -> list[float]:
+        """
+        Build opponent context features for a fighter's past fight.
+
+        Returns height, reach, age, weight, opponent win rate, and fight outcome.
+        Missing opponent data is represented with zeros.
+        """
         fight_row = self._lookup_fight_result(fighter_name, fight_date)
         if fight_row is None:
             return [0.0] * 6
@@ -136,65 +187,21 @@ class Data:
             outcome,
         ]
 
-    def get_matchup_features(
-        self,
-        name1: str,
-        name2: str,
-        date: str,
-        days_before1: list[float] | None = None,
-        days_before2: list[float] | None = None,
-    ) -> list[float]:
+    def _safe_lookup_fighter_profile(self, name: str) -> pandas.Series | None:
         """
-        Build matchup-relative features for two fighters at a given date.
+        Return the fighter profile row, or None if the fighter is not found.
         """
-        days_since_fight = days_since_fight_date(date)
-        fighter1_profile = self._lookup_fighter_profile(name1)
-        fighter2_profile = self._lookup_fighter_profile(name2)
-        return build_matchup_features(
-            fighter1_profile,
-            fighter2_profile,
-            days_since_fight,
-            days_before1=days_before1,
-            days_before2=days_before2,
-        )
+        try:
+            return self._lookup_fighter_profile(name)
+        except MissingFighterDataException:
+            return None
 
-    def _lookup_fighter_profile(self, name: str) -> pandas.Series:
-        """
-        Return the fighter profile row for an exact name match.
-        """
-        matches = filter_fighter_rows(self.fighter_data, name)
-        if len(matches) != 1:
-            raise MissingFighterDataException(f"Missing data for fighter {name}")
-        return matches.iloc[0]
 
-    def _get_sorted_past_fights(
-        self,
-        name: str,
-        days_since_fight: int,
-        min_fights: int,
-        date: Optional[str] = None,
-    ) -> list[pandas.Series]:
-        """
-        Return a fighter's past fights prior to a given date, most-recent-first.
-        """
-        fighter_data = filter_fighter_rows(self.fight_stats, name)
-        past_fights: list[tuple[int, pandas.Series]] = []
-        for _, row in fighter_data.iterrows():
-            row_days_since = days_since_fight_date(str(row["Date"]))
-            if row_days_since > days_since_fight:
-                past_fights.append((row_days_since, row))
-
-        past_fights.sort(key=lambda item: item[0])
-        if len(past_fights) < min_fights:
-            date_suffix = f" at {date}" if date is not None else ""
-            raise MinFightsException(
-                f"Fighter {name} had fewer than {min_fights} fights{date_suffix}"
-            )
-        return [row for _, row in past_fights]
+    # Public methods
 
     def find_fighter_stats(self, name: str, date: str, min_fights: int = 3) -> list[float]:
         """
-        Find recency-weighted average stats for a fighter's most recent prior fights.
+        Find recency weighted average stats for a fighter's most recent prior fights.
         """
         days_since_fight = days_since_fight_date(date)
         fighter_info = self._lookup_fighter_profile(name)
@@ -269,11 +276,11 @@ class Data:
         max_fights: int = MAX_FIGHTS,
     ) -> tuple[list[list[float]], list[float], list[float]]:
         """
-        Return per-fight feature vectors for a fighter's past fights prior to a given date.
-        Fights are ordered most-recent-first.
+        Return per-fight feature vectors for a fighter's past fights prior to a given date,
+        in most recent first order.
 
         Also returns days_before (days from each past fight to the given date) and
-        days_gap (days between consecutive past fights, 0 for the most recent fight).
+        days_gap (days between consecutive past fights, 0 for the most recent fight) for each fight.
         """
         days_since_fight = days_since_fight_date(date)
         fighter_info = self._lookup_fighter_profile(name)
@@ -321,6 +328,131 @@ class Data:
 
         return sequence, days_before, days_gap
 
+    def get_matchup_features(
+        self,
+        name1: str,
+        name2: str,
+        date: str,
+        days_before1: list[float] | None = None,
+        days_before2: list[float] | None = None,
+    ) -> list[float]:
+        """
+        Build matchup relative features for two fighters at a given date.
+        """
+        days_since_fight = days_since_fight_date(date)
+        fighter1_profile = self._lookup_fighter_profile(name1)
+        fighter2_profile = self._lookup_fighter_profile(name2)
+        return build_matchup_features(
+            fighter1_profile,
+            fighter2_profile,
+            days_since_fight,
+            days_before1=days_before1,
+            days_before2=days_before2,
+        )
+
+    def create_standard_training_data(
+        self,
+        min_fights: Optional[int] = None,
+        save_path: Optional[str] = None,
+    ) -> None:
+        """
+        Creates a set of training data based upon the statistics of each fighter prior to a given fight,
+        using the result of the fight as the training label
+
+        Args:
+            min_fights: int or None
+                The minimum number of fights a fighter must have had to be considered for training.
+                Defaults to MIN_FIGHTS from globals.py
+            save_path: str or None
+                The path to save the training data to.
+                Defaults to STANDARD_TRAINING_DATA_PATH from globals.py
+        """
+        if any(
+            [
+                df is None or len(df) == 0
+                for df in [self.fight_results, self.fight_stats, self.fighter_data]
+            ]
+        ):
+            raise MissingDataException()
+
+        if min_fights is None:
+            min_fights = MIN_FIGHTS
+        if save_path is None:
+            save_path = STANDARD_TRAINING_DATA_PATH
+
+        features = []
+        labels = []
+        fight_dates = []
+
+        # loop through fight results and find the stats for each of the fighters from their n prior fights
+        for _, row in tqdm(
+            self.fight_results.iterrows(),
+            total=len(self.fight_results),
+            desc="Creating training data",
+            unit="fight",
+        ):
+            date = str(row["Date"])
+            name1 = str(row["Fighter 1"]).strip()
+            name2 = str(row["Fighter 2"]).strip()
+            result = int(row["Result"])
+
+            if date > "01/01/2010" and result != 4:
+
+                # finds the stats of the two fighters prior to the date of the given fight occuring
+                try:
+                    fighter1_useful_data = self.find_fighter_stats(
+                        name1, date, min_fights
+                    )
+                    fighter2_useful_data = self.find_fighter_stats(
+                        name2, date, min_fights
+                    )
+                except Exception as e:
+                    if VERBOSE: tqdm.write(f"Skipping fight: {e}")
+                    continue
+
+                label = result - 1
+                opp_label = opposite_label(result)
+                date_key = parse_date_sort_key(date)
+                matchup = self.get_matchup_features(
+                    name1,
+                    name2,
+                    date,
+                    days_before1=[fighter1_useful_data[-1]],
+                    days_before2=[fighter2_useful_data[-1]],
+                )
+
+                features.append(fighter1_useful_data + fighter2_useful_data + matchup)
+                labels.append(label)
+                fight_dates.append(date_key)
+
+                features.append(
+                    fighter2_useful_data
+                    + fighter1_useful_data
+                    + [
+                        -matchup[0],
+                        -matchup[1],
+                        -matchup[2],
+                        -matchup[3],
+                        matchup[4],
+                        matchup[5],
+                        matchup[7],
+                        matchup[6],
+                    ]
+                )
+                labels.append(opp_label)
+                fight_dates.append(date_key)
+
+        save_path_obj = Path(save_path) if isinstance(save_path, str) else save_path
+        save_path_obj.parent.mkdir(parents=True, exist_ok=True)
+        self.training_data = {
+            "features": torch.tensor(features, dtype=torch.float32),
+            "labels": torch.tensor(labels, dtype=torch.long),
+            "fight_dates": torch.tensor(fight_dates, dtype=torch.long),
+        }
+        torch.save(self.training_data, save_path)
+        tqdm.write(f"Saved training data to {save_path}")
+        tqdm.write(f"Training samples: {len(labels)}")
+
     def create_transformer_training_data(
         self,
         min_fights: Optional[int] = None,
@@ -328,10 +460,21 @@ class Data:
         save_path: Optional[str] = None,
     ) -> None:
         """
-        Build padded fight-sequence training data for the transformer model.
+        Build padded fight sequence training data for the transformer model.
 
         Each sample contains both fighters' past fights (most recent first),
         with labels for fighter 1's win / loss / draw outcome.
+
+        Args:
+            min_fights: int or None
+                The minimum number of fights a fighter must have had to be considered for training.
+                Defaults to MIN_FIGHTS from globals.py
+            max_fights: int or None
+                The maximum number of fights a fighter can have in a sequence.
+                Defaults to MAX_FIGHTS from globals.py
+            save_path: str or None
+                The path to save the training data to.
+                Defaults to TRANSFORMER_STANDARD_TRAINING_DATA_PATH from globals.py
         """
         if any(
             [
@@ -480,111 +623,9 @@ class Data:
         tqdm.write(f"Saved transformer training data to {save_path}")
         tqdm.write(f"Training samples: {len(labels)}")
 
-    def create_standard_training_data(
-        self,
-        min_fights: Optional[int] = None,
-        save_path: Optional[str] = None,
-    ) -> None:
-        """
-        Creates a set of training data based upon the statistics of each fighter prior to a given fight,
-        using the result of the fight as the training label
-
-        Args:
-            min_fights: int or None
-                The minimum number of fights a fighter must have had to be considered for training.
-                Default to MIN_FIGHTS from globals.py
-            save_path: str or None
-                The path to save the training data to.
-                Default to STANDARD_TRAINING_DATA_PATH from globals.py
-        """
-        if any(
-            [
-                df is None or len(df) == 0
-                for df in [self.fight_results, self.fight_stats, self.fighter_data]
-            ]
-        ):
-            raise MissingDataException()
-
-        if min_fights is None:
-            min_fights = MIN_FIGHTS
-        if save_path is None:
-            save_path = STANDARD_TRAINING_DATA_PATH
-
-        features = []
-        labels = []
-        fight_dates = []
-
-        # loop through fight results and find the stats for each of the fighters from their n prior fights
-        for _, row in tqdm(
-            self.fight_results.iterrows(),
-            total=len(self.fight_results),
-            desc="Creating training data",
-            unit="fight",
-        ):
-            date = str(row["Date"])
-            name1 = str(row["Fighter 1"]).strip()
-            name2 = str(row["Fighter 2"]).strip()
-            result = int(row["Result"])
-
-            if date > "01/01/2010" and result != 4:
-
-                # finds the stats of the two fighters prior to the date of the given fight occuring
-                try:
-                    fighter1_useful_data = self.find_fighter_stats(
-                        name1, date, min_fights
-                    )
-                    fighter2_useful_data = self.find_fighter_stats(
-                        name2, date, min_fights
-                    )
-                except Exception as e:
-                    if VERBOSE: tqdm.write(f"Skipping fight: {e}")
-                    continue
-
-                label = result - 1
-                opp_label = opposite_label(result)
-                date_key = parse_date_sort_key(date)
-                matchup = self.get_matchup_features(
-                    name1,
-                    name2,
-                    date,
-                    days_before1=[fighter1_useful_data[-1]],
-                    days_before2=[fighter2_useful_data[-1]],
-                )
-
-                features.append(fighter1_useful_data + fighter2_useful_data + matchup)
-                labels.append(label)
-                fight_dates.append(date_key)
-
-                features.append(
-                    fighter2_useful_data
-                    + fighter1_useful_data
-                    + [
-                        -matchup[0],
-                        -matchup[1],
-                        -matchup[2],
-                        -matchup[3],
-                        matchup[4],
-                        matchup[5],
-                        matchup[7],
-                        matchup[6],
-                    ]
-                )
-                labels.append(opp_label)
-                fight_dates.append(date_key)
-
-        save_path_obj = Path(save_path) if isinstance(save_path, str) else save_path
-        save_path_obj.parent.mkdir(parents=True, exist_ok=True)
-        self.training_data = {
-            "features": torch.tensor(features, dtype=torch.float32),
-            "labels": torch.tensor(labels, dtype=torch.long),
-            "fight_dates": torch.tensor(fight_dates, dtype=torch.long),
-        }
-        torch.save(self.training_data, save_path)
-        tqdm.write(f"Saved training data to {save_path}")
-        tqdm.write(f"Training samples: {len(labels)}")
-
 
 if __name__ == "__main__":
     data = Data()
-    data.create_training_data()
+    data.create_standard_training_data()
+    data.create_transformer_training_data()
     print(f"Training data length: {len(data.training_data['labels'])}")
