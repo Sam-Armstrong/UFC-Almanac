@@ -487,8 +487,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--epochs",
         type=int,
-        default=400,
-        help="number of training epochs (default: 400)",
+        default=40,
+        help="number of training epochs (default: 40)",
     )
     parser.add_argument(
         "--batch-size",
@@ -499,14 +499,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--learning-rate",
         type=float,
-        default=3e-4,
-        help="optimizer learning rate (default: 3e-4)",
+        default=3e-5,
+        help="optimizer learning rate (default: 3e-5)",
     )
     parser.add_argument(
         "--val-fraction",
         type=float,
-        default=0.2,
-        help="fraction of the most recent samples held out for validation (default: 0.2)",
+        default=0.1,
+        help="fraction of the most recent samples held out for validation (default: 0.1)",
     )
     parser.add_argument(
         "--rebuild-data",
@@ -516,8 +516,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--weight-decay",
         type=float,
-        default=1e-3,
-        help="L2 regularization strength for Adam (default: 1e-3)",
+        default=3e-5,
+        help="L2 regularization strength for Adam (default: 3e-5)",
     )
     parser.add_argument(
         "--dropout",
@@ -528,14 +528,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--d-model",
         type=int,
-        default=16,
-        help="transformer hidden dimension (default: 16)",
+        default=128,
+        help="transformer hidden dimension (default: 128)",
     )
     parser.add_argument(
         "--num-layers",
         type=int,
-        default=12,
-        help="number of transformer encoder layers (default: 12)",
+        default=4,
+        help="number of transformer encoder layers (default: 4)",
     )
     parser.add_argument(
         "--max-fights",
