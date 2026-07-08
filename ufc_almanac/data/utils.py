@@ -10,22 +10,41 @@ from ufc_almanac.globals import (
 )
 
 
-def normalize_fighter_name(name: str) -> str:
+def build_matchup_features(
+    fighter1_profile: pandas.Series,
+    fighter2_profile: pandas.Series,
+    days_since_fight: int,
+    days_before1: list[float] | None = None,
+    days_before2: list[float] | None = None,
+) -> list[float]:
     """
-    Normalize a fighter name for exact matching.
+    Build matchup-relative features for a head-to-head prediction.
     """
-    return str(name).strip().casefold()
+    height1 = float(fighter1_profile["Height"])
+    height2 = float(fighter2_profile["Height"])
+    reach1 = float(fighter1_profile["Reach"])
+    reach2 = float(fighter2_profile["Reach"])
+    weight1 = float(fighter1_profile["Weight"])
+    weight2 = float(fighter2_profile["Weight"])
+    stance1 = float(fighter1_profile["Stance"])
+    stance2 = float(fighter2_profile["Stance"])
+    years_since = days_since_fight // 365
+    age1 = float(fighter1_profile["Age"] - years_since)
+    age2 = float(fighter2_profile["Age"] - years_since)
+    weight_diff = abs(weight1 - weight2)
+    days_since_last_fight1 = float(days_before1[0]) if days_before1 else 0.0
+    days_since_last_fight2 = float(days_before2[0]) if days_before2 else 0.0
 
-
-def filter_fighter_rows(dataframe: pandas.DataFrame, name: str) -> pandas.DataFrame:
-    """
-    Return rows whose fighter name matches exactly after normalization.
-    """
-    normalized_name = normalize_fighter_name(name)
-    return dataframe[
-        dataframe["Name"].map(normalize_fighter_name) == normalized_name
+    return [
+        reach1 - reach2,
+        height1 - height2,
+        age1 - age2,
+        weight1 - weight2,
+        1.0 if weight_diff > WEIGHT_CLASS_MISMATCH_THRESHOLD else 0.0,
+        1.0 if stance1 != stance2 else 0.0,
+        days_since_last_fight1,
+        days_since_last_fight2,
     ]
-
 
 def calculate_days_since(day: str, month: str, year: str) -> int:
     """
@@ -50,6 +69,34 @@ def days_since_fight_date(date: str) -> int:
         year, month, day = date.split("-")
     return calculate_days_since(day, month, year)
 
+def fight_outcome_for_fighter(fight_row: pandas.Series, fighter_name: str) -> float:
+    """
+    Encode a fighter's past fight outcome as win=1.0, loss=0.0, draw=0.5.
+    """
+    result = int(fight_row["Result"])
+    if result == 3:
+        return 0.5
+    fighter1 = str(fight_row["Fighter 1"]).strip()
+    if normalize_fighter_name(fighter_name) == normalize_fighter_name(fighter1):
+        return 1.0 if result == 1 else 0.0
+    return 1.0 if result == 2 else 0.0
+
+def fighter_age_at_fight(current_age: float, fight_days_since: int, matchup_days_since: int) -> float:
+    """
+    Estimate a fighter's age at a past fight relative to a future matchup date.
+    """
+    years_since = (fight_days_since - matchup_days_since) // 365
+    return float(current_age - years_since)
+
+def filter_fighter_rows(dataframe: pandas.DataFrame, name: str) -> pandas.DataFrame:
+    """
+    Return rows whose fighter name matches exactly after normalization.
+    """
+    normalized_name = normalize_fighter_name(name)
+    return dataframe[
+        dataframe["Name"].map(normalize_fighter_name) == normalized_name
+    ]
+
 def load_csv(path: str) -> Union[pandas.DataFrame, None]:
     """
     Load a CSV file, dropping any legacy index column
@@ -69,6 +116,22 @@ def load_training_data(path: str) -> Union[torch.Tensor, None]:
     if path.exists():
         return torch.load(path, weights_only=True)
     return None
+
+def normalize_fighter_name(name: str) -> str:
+    """
+    Normalize a fighter name for exact matching.
+    """
+    return str(name).strip().casefold()
+
+def opponent_name_for_fighter(fight_row: pandas.Series, fighter_name: str) -> str:
+    """
+    Return the opponent name from a fight result row.
+    """
+    fighter1 = str(fight_row["Fighter 1"]).strip()
+    fighter2 = str(fight_row["Fighter 2"]).strip()
+    if normalize_fighter_name(fighter_name) == normalize_fighter_name(fighter1):
+        return fighter2
+    return fighter1
 
 def opposite_label(result: int) -> int:
     if result == 3:
@@ -146,78 +209,8 @@ def per_minute_stats(row: pandas.Series) -> list[float]:
         round(ground_strikes_taken / minutes, 4),
     ]
 
-
 def recency_weight(days_before: float, half_life_days: float = RECENCY_HALF_LIFE_DAYS) -> float:
     """
     Exponential recency weight for a past fight.
     """
     return math.exp(-days_before / half_life_days)
-
-
-def opponent_name_for_fighter(fight_row: pandas.Series, fighter_name: str) -> str:
-    """
-    Return the opponent name from a fight result row.
-    """
-    fighter1 = str(fight_row["Fighter 1"]).strip()
-    fighter2 = str(fight_row["Fighter 2"]).strip()
-    if normalize_fighter_name(fighter_name) == normalize_fighter_name(fighter1):
-        return fighter2
-    return fighter1
-
-
-def fight_outcome_for_fighter(fight_row: pandas.Series, fighter_name: str) -> float:
-    """
-    Encode a fighter's past fight outcome as win=1.0, loss=0.0, draw=0.5.
-    """
-    result = int(fight_row["Result"])
-    if result == 3:
-        return 0.5
-    fighter1 = str(fight_row["Fighter 1"]).strip()
-    if normalize_fighter_name(fighter_name) == normalize_fighter_name(fighter1):
-        return 1.0 if result == 1 else 0.0
-    return 1.0 if result == 2 else 0.0
-
-
-def fighter_age_at_fight(current_age: float, fight_days_since: int, matchup_days_since: int) -> float:
-    """
-    Estimate a fighter's age at a past fight relative to a future matchup date.
-    """
-    years_since = (fight_days_since - matchup_days_since) // 365
-    return float(current_age - years_since)
-
-
-def build_matchup_features(
-    fighter1_profile: pandas.Series,
-    fighter2_profile: pandas.Series,
-    days_since_fight: int,
-    days_before1: list[float] | None = None,
-    days_before2: list[float] | None = None,
-) -> list[float]:
-    """
-    Build matchup-relative features for a head-to-head prediction.
-    """
-    height1 = float(fighter1_profile["Height"])
-    height2 = float(fighter2_profile["Height"])
-    reach1 = float(fighter1_profile["Reach"])
-    reach2 = float(fighter2_profile["Reach"])
-    weight1 = float(fighter1_profile["Weight"])
-    weight2 = float(fighter2_profile["Weight"])
-    stance1 = float(fighter1_profile["Stance"])
-    stance2 = float(fighter2_profile["Stance"])
-    years_since = days_since_fight // 365
-    age1 = float(fighter1_profile["Age"] - years_since)
-    age2 = float(fighter2_profile["Age"] - years_since)
-    weight_diff = abs(weight1 - weight2)
-    days_since_last_fight1 = float(days_before1[0]) if days_before1 else 0.0
-    days_since_last_fight2 = float(days_before2[0]) if days_before2 else 0.0
-
-    return [
-        reach1 - reach2,
-        height1 - height2,
-        age1 - age2,
-        weight1 - weight2,
-        1.0 if weight_diff > WEIGHT_CLASS_MISMATCH_THRESHOLD else 0.0,
-        1.0 if stance1 != stance2 else 0.0,
-        days_since_last_fight1,
-        days_since_last_fight2,
-    ]
