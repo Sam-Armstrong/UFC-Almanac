@@ -60,6 +60,18 @@ def collect_validation_logits(
 
     return torch.cat(all_logits), torch.cat(all_labels)
 
+
+def compute_brier_score(logits: torch.Tensor, labels: torch.Tensor) -> float:
+    """
+    Compute the multiclass Brier score for predicted probabilities.
+    Lower is better.
+    """
+    probabilities = torch.softmax(logits, dim=-1)
+    num_classes = probabilities.size(-1)
+    one_hot = torch.nn.functional.one_hot(labels, num_classes=num_classes).float()
+    return ((probabilities - one_hot) ** 2).sum(dim=-1).mean().item()
+
+
 def load_training_data(
     path: Union[str, Path] = STANDARD_TRAINING_DATA_PATH,
 ) -> dict[str, torch.Tensor]:

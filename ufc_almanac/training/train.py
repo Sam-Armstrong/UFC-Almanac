@@ -21,6 +21,7 @@ from ufc_almanac.models import MODELS
 from ufc_almanac.training.dataset import FightSequenceDataset
 from ufc_almanac.training.utils import (
     collect_validation_logits,
+    compute_brier_score,
     compute_feature_normalization,
     load_training_data,
     normalize_features,
@@ -37,7 +38,7 @@ def evaluate(
     data_loader: DataLoader,
     criterion: nn.Module,
     is_transformer: bool = False,
-) -> tuple[float, float]:
+) -> tuple[float, float, float]:
     """
     Evaluates the performance of a model on a data loader.
 
@@ -52,11 +53,12 @@ def evaluate(
             The criterion to use for evaluation.
 
     Returns:
-        tuple[float, float]
-            The total loss and accuracy.
+        tuple[float, float, float]
+            The total loss, accuracy, and Brier score.
     """
     model.eval()
     total_loss = 0.0
+    total_brier = 0.0
     correct = 0
     total = 0
 
@@ -87,6 +89,7 @@ def evaluate(
                     matchup_features,
                 )
                 total_loss += criterion(logits, labels).item() * labels.size(0)
+                total_brier += compute_brier_score(logits, labels) * labels.size(0)
                 predictions = logits.argmax(dim=1)
                 correct += (predictions == labels).sum().item()
                 total += labels.size(0)
@@ -97,11 +100,12 @@ def evaluate(
 
                 logits = model(batch_features)
                 total_loss += criterion(logits, batch_labels).item() * batch_labels.size(0)
+                total_brier += compute_brier_score(logits, batch_labels) * batch_labels.size(0)
                 predictions = logits.argmax(dim=1)
                 correct += (predictions == batch_labels).sum().item()
                 total += batch_labels.size(0)
 
-    return total_loss / total, (correct / total) * 100
+    return total_loss / total, (correct / total) * 100, total_brier / total
 
 def _training_run_description(
     base_desc: str,
@@ -148,7 +152,8 @@ def train_ff(
             Dropout probability applied within the model.
     """
     device = get_device()
-    tqdm.write(f"Using device: {device}")
+    if run_number == 1 or run_number is None:
+        tqdm.write(f"Using device: {device}")
 
     features = training_data["features"]
     labels = training_data["labels"]
@@ -183,6 +188,7 @@ def train_ff(
 
     start_time = time.time()
     best_val_loss = float("inf")
+    best_val_brier = float("inf")
     best_val_accuracy = 0.0
     best_model_state: dict[str, torch.Tensor] | None = None
     saved_during_training = False
@@ -207,15 +213,15 @@ def train_ff(
             optimizer.step()
             train_loss += loss.item()
 
-        val_loss, val_accuracy = evaluate(
+        val_loss, val_accuracy, val_brier = evaluate(
             model, device, val_loader, criterion, is_transformer=False
         )
-        if val_loss < best_val_loss:
+        if val_brier < best_val_brier:
             best_model_state = {
                 key: value.detach().clone()
                 for key, value in model.state_dict().items()
             }
-        if save_checkpoint and (epoch + 1) > save_after_epoch and val_loss < best_val_loss:
+        if save_checkpoint and (epoch + 1) > save_after_epoch and val_brier < best_val_brier:
             save_artifacts(
                 model,
                 resolved_model_path,
@@ -225,16 +231,19 @@ def train_ff(
             )
             saved_during_training = True
         best_val_loss = min(best_val_loss, val_loss)
+        best_val_brier = min(best_val_brier, val_brier)
         best_val_accuracy = max(best_val_accuracy, val_accuracy)
         epoch_bar.set_postfix(
             train_loss=f"{train_loss / len(train_loader):.4f}",
             val_loss=f"{val_loss:.4f}",
+            val_brier=f"{val_brier:.4f}",
             val_acc=f"{val_accuracy:.2f}%",
         )
 
     tqdm.write(f"Finished training in {round(time.time() - start_time, 1)} seconds")
     tqdm.write(
-        f"Best val loss: {best_val_loss:.4f}, best val accuracy: {best_val_accuracy:.2f}%"
+        f"Best val Brier: {best_val_brier:.4f}, best val loss: {best_val_loss:.4f}, "
+        f"best val accuracy: {best_val_accuracy:.2f}%"
     )
 
     if best_model_state is not None:
@@ -251,6 +260,7 @@ def train_ff(
 
     return {
         "best_val_loss": best_val_loss,
+        "best_val_brier": best_val_brier,
         "best_val_accuracy": best_val_accuracy,
         "model": model,
         "means": means,
@@ -278,7 +288,8 @@ def train_transformer(
     total_runs: int | None = None,
 ) -> dict[str, Any]:
     device = get_device()
-    tqdm.write(f"Using device: {device}")
+    if run_number == 1 or run_number is None:
+        tqdm.write(f"Using device: {device}")
 
     train_indices, val_indices = temporal_train_val_split(
         len(training_data["labels"]),
@@ -342,6 +353,7 @@ def train_transformer(
 
     start_time = time.time()
     best_val_loss = float("inf")
+    best_val_brier = float("inf")
     best_val_accuracy = 0.0
     best_model_state: dict[str, torch.Tensor] | None = None
     saved_during_training = False
@@ -385,15 +397,15 @@ def train_transformer(
             optimizer.step()
             train_loss += loss.item()
 
-        val_loss, val_accuracy = evaluate(
+        val_loss, val_accuracy, val_brier = evaluate(
             model, device, val_loader, criterion, is_transformer=True
         )
-        if val_loss < best_val_loss:
+        if val_brier < best_val_brier:
             best_model_state = {
                 key: value.detach().clone()
                 for key, value in model.state_dict().items()
             }
-        if save_checkpoint and (epoch + 1) > save_after_epoch and val_loss < best_val_loss:
+        if save_checkpoint and (epoch + 1) > save_after_epoch and val_brier < best_val_brier:
             save_artifacts(
                 model,
                 resolved_model_path,
@@ -405,16 +417,19 @@ def train_transformer(
             )
             saved_during_training = True
         best_val_loss = min(best_val_loss, val_loss)
+        best_val_brier = min(best_val_brier, val_brier)
         best_val_accuracy = max(best_val_accuracy, val_accuracy)
         epoch_bar.set_postfix(
             train_loss=f"{train_loss / len(train_loader):.4f}",
             val_loss=f"{val_loss:.4f}",
+            val_brier=f"{val_brier:.4f}",
             val_acc=f"{val_accuracy:.2f}%",
         )
 
     tqdm.write(f"Finished training in {round(time.time() - start_time, 1)} seconds")
     tqdm.write(
-        f"Best val loss: {best_val_loss:.4f}, best val accuracy: {best_val_accuracy:.2f}%"
+        f"Best val Brier: {best_val_brier:.4f}, best val loss: {best_val_loss:.4f}, "
+        f"best val accuracy: {best_val_accuracy:.2f}%"
     )
 
     temperature = None
@@ -448,6 +463,7 @@ def train_transformer(
 
     return {
         "best_val_loss": best_val_loss,
+        "best_val_brier": best_val_brier,
         "best_val_accuracy": best_val_accuracy,
         "model": model,
         "means": means,
@@ -545,7 +561,7 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=1,
         help="number of independent training runs; when greater than 1, saves the run "
-        "with the lowest validation loss (default: 1)",
+        "with the lowest validation Brier score (default: 1)",
     )
     return parser.parse_args()
 
@@ -627,18 +643,19 @@ def main() -> None:
     if args.restarts > 1:
         best_run_number, best_result = min(
             run_results,
-            key=lambda item: item[1]["best_val_loss"],
+            key=lambda item: item[1]["best_val_brier"],
         )
         tqdm.write("Restart summary:")
         for run_number, result in run_results:
             marker = "*" if run_number == best_run_number else " "
             tqdm.write(
-                f"{marker} Run {run_number}: val loss {result['best_val_loss']:.4f}, "
+                f"{marker} Run {run_number}: val Brier {result['best_val_brier']:.4f}, "
+                f"val loss {result['best_val_loss']:.4f}, "
                 f"val accuracy {result['best_val_accuracy']:.2f}%"
             )
         tqdm.write(
-            f"Saving run {best_run_number} with lowest val loss "
-            f"({best_result['best_val_loss']:.4f})"
+            f"Saving run {best_run_number} with lowest val Brier "
+            f"({best_result['best_val_brier']:.4f})"
         )
         save_artifacts(
             best_result["model"],
