@@ -5,10 +5,11 @@ import torch
 from typing import Union
 
 from ufc_almanac.globals import (
+    MATCHUP_DAYS_SINCE_LAST_FIGHT_SIZE,
+    MATCHUP_FIGHTER_PROFILE_FEATURE_SIZE,
     MATCHUP_STATIC_FEATURE_SIZE,
     METHOD_RECORD_FEATURE_SIZE,
     RECENCY_HALF_LIFE_DAYS,
-    WEIGHT_CLASS_MISMATCH_THRESHOLD,
 )
 
 
@@ -31,30 +32,14 @@ def build_matchup_features(
     fighter2_method_record: list[float] | None = None,
 ) -> list[float]:
     """
-    Build matchup-relative features for a head-to-head prediction.
+    Build matchup features for a head-to-head prediction.
     """
-    height1 = float(fighter1_profile["Height"])
-    height2 = float(fighter2_profile["Height"])
-    reach1 = float(fighter1_profile["Reach"])
-    reach2 = float(fighter2_profile["Reach"])
-    weight1 = float(fighter1_profile["Weight"])
-    weight2 = float(fighter2_profile["Weight"])
-    stance1 = float(fighter1_profile["Stance"])
-    stance2 = float(fighter2_profile["Stance"])
-    years_since = days_since_fight // 365
-    age1 = float(fighter1_profile["Age"] - years_since)
-    age2 = float(fighter2_profile["Age"] - years_since)
-    weight_diff = abs(weight1 - weight2)
     days_since_last_fight1 = float(days_before1[0]) if days_before1 else 0.0
     days_since_last_fight2 = float(days_before2[0]) if days_before2 else 0.0
 
     features = [
-        reach1 - reach2,
-        height1 - height2,
-        age1 - age2,
-        weight1 - weight2,
-        1.0 if weight_diff > WEIGHT_CLASS_MISMATCH_THRESHOLD else 0.0,
-        1.0 if stance1 != stance2 else 0.0,
+        *fighter_matchup_profile_features(fighter1_profile, days_since_fight),
+        *fighter_matchup_profile_features(fighter2_profile, days_since_fight),
         days_since_last_fight1,
         days_since_last_fight2,
     ]
@@ -118,6 +103,22 @@ def fighter_age_at_fight(current_age: float, fight_days_since: int, matchup_days
     years_since = (fight_days_since - matchup_days_since) // 365
     return float(current_age - years_since)
 
+def fighter_matchup_profile_features(
+    fighter_profile: pandas.Series,
+    days_since_fight: int,
+) -> list[float]:
+    """
+    Build raw reach, height, age, and stance features for a fighter at a fight date.
+    """
+    years_since = days_since_fight // 365
+    age = float(fighter_profile["Age"] - years_since)
+    return [
+        float(fighter_profile["Reach"]),
+        float(fighter_profile["Height"]),
+        age,
+        *stance_binary_features(float(fighter_profile["Stance"])),
+    ]
+
 def filter_fighter_rows(dataframe: pandas.DataFrame, name: str) -> pandas.DataFrame:
     """
     Return rows whose fighter name matches exactly after normalization.
@@ -151,9 +152,12 @@ def mirror_matchup_features(matchup: list[float]) -> list[float]:
     """
     Flip matchup features when swapping fighter 1 and fighter 2.
     """
-    mirrored = [-value for value in matchup[:4]]
-    mirrored.extend(matchup[4:6])
-    mirrored.extend([matchup[7], matchup[6]])
+    profile_size = MATCHUP_FIGHTER_PROFILE_FEATURE_SIZE
+    fighter1_profile = matchup[:profile_size]
+    fighter2_profile = matchup[profile_size : 2 * profile_size]
+    days_start = 2 * profile_size
+    days1 = matchup[days_start]
+    days2 = matchup[days_start + MATCHUP_DAYS_SINCE_LAST_FIGHT_SIZE - 1]
     method_start = MATCHUP_STATIC_FEATURE_SIZE
     fighter1_method_record = matchup[
         method_start : method_start + METHOD_RECORD_FEATURE_SIZE
@@ -162,9 +166,14 @@ def mirror_matchup_features(matchup: list[float]) -> list[float]:
         method_start + METHOD_RECORD_FEATURE_SIZE : method_start
         + 2 * METHOD_RECORD_FEATURE_SIZE
     ]
-    mirrored.extend(fighter2_method_record)
-    mirrored.extend(fighter1_method_record)
-    return mirrored
+    return [
+        *fighter2_profile,
+        *fighter1_profile,
+        days2,
+        days1,
+        *fighter2_method_record,
+        *fighter1_method_record,
+    ]
 
 def normalize_fighter_name(name: str) -> str:
     """
@@ -263,3 +272,14 @@ def recency_weight(days_before: float, half_life_days: float = RECENCY_HALF_LIFE
     Exponential recency weight for a past fight.
     """
     return math.exp(-days_before / half_life_days)
+
+def stance_binary_features(stance: float) -> list[float]:
+    """
+    Encode stance as orthodox / southpaw / switch one-hot features.
+    """
+    stance_value = int(stance)
+    return [
+        1.0 if stance_value == 1 else 0.0,
+        1.0 if stance_value == 2 else 0.0,
+        1.0 if stance_value == 3 else 0.0,
+    ]
