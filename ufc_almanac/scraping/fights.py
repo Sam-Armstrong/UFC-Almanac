@@ -92,7 +92,13 @@ def scrape_past_fights(start_date=None, end_date=None):
                 url_list.append(link["data-link"])
 
         results_dataframe = pandas.DataFrame(
-            columns=["Date", "Fighter 1", "Fighter 2", "Result", "Split Dec?"]
+            columns=[
+                "Date",
+                "Fighter 1",
+                "Fighter 2",
+                "Result",
+                "Method",
+            ]
         )
         stats_dataframe = pandas.DataFrame(
             columns=[
@@ -137,20 +143,12 @@ def scrape_past_fights(start_date=None, end_date=None):
                 fighter1_stats = list()
                 fighter2_stats = list()
                 info_data = list()
-                split_dec = 0
 
-                text1 = soup.find_all(
+                method_text = soup.find_all(
                     "i", attrs={"class": "b-fight-details__text-item_first"}
                 )
-                text2 = soup.find_all(
-                    "i",
-                    attrs={
-                        "class": "b-fight-details__person-status b-fight-details__person-status_style_gray"
-                    },
-                )
 
-                if "Decision - S" in text1[0].text or len(text2) > 1:
-                    split_dec = 1
+                method = str(method_text[0].text).replace("Method:", "").strip()
 
                 raw_stats = soup.find_all(
                     "p", attrs={"class": "b-fight-details__table-text"}
@@ -259,7 +257,7 @@ def scrape_past_fights(start_date=None, end_date=None):
                 info_data.append(name1)
                 info_data.append(name2)
                 info_data.append(r)
-                info_data.append(split_dec)
+                info_data.append(method)
 
                 fighter1_stats.append(name1)
                 fighter1_stats.append(date)
