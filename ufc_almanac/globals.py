@@ -9,7 +9,7 @@ TRANSFORMER_STANDARD_TRAINING_DATA_PATH = "data/TransformerTrainingData.pt"
 CHECKPOINTS_DIR = "artifacts/checkpoints"
 
 BLOCKED_RESOURCE_TYPES = {"image", "media", "font"}
-MIN_FIGHTS = 3
+MIN_FIGHTS = 1
 MAX_FIGHTS = 8
 VERBOSE = bool(int(os.getenv("VERBOSE", 0)))
 WEIGHT_CLASS_MISMATCH_THRESHOLD = 10
@@ -55,6 +55,17 @@ FIGHTER_FEATURE_COLUMNS = (
     + FIGHTER_FORM_COLUMNS
 )
 
+METHOD_RECORD_COLUMNS = [
+    "Wins by KO/TKO",
+    "Wins by Submission",
+    "Wins by Decision",
+    "Losses by KO/TKO",
+    "Losses by Submission",
+    "Losses by Decision",
+]
+METHOD_RECORD_FEATURE_SIZE = len(METHOD_RECORD_COLUMNS)
+MATCHUP_STATIC_FEATURE_SIZE = 8
+
 MATCHUP_FEATURE_COLUMNS = [
     "Reach Diff",
     "Height Diff",
@@ -64,6 +75,8 @@ MATCHUP_FEATURE_COLUMNS = [
     "Stance Mismatch",
     "Days Since Last Fight 1",
     "Days Since Last Fight 2",
+    * [f"{column} 1" for column in METHOD_RECORD_COLUMNS],
+    * [f"{column} 2" for column in METHOD_RECORD_COLUMNS],
 ]
 
 FEATURE_COLUMNS = (
