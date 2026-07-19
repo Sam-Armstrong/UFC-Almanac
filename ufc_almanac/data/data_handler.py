@@ -7,11 +7,13 @@ from typing import Optional
 from ufc_almanac.data.utils import (
     build_matchup_features,
     days_since_fight_date,
+    fight_method_category,
     fight_outcome_for_fighter,
     filter_fighter_rows,
     fighter_age_at_fight,
     load_csv,
     load_training_data,
+    mirror_matchup_features,
     normalize_fighter_name,
     opponent_name_for_fighter,
     opposite_label,
@@ -52,7 +54,7 @@ class Data:
         self.standard_training_data = load_training_data(standard_training_path)
         self.transformer_training_data = load_training_data(transformer_training_path)
         self._fight_result_index: dict[tuple[str, str], pandas.Series] = {}
-        self._fighter_history: dict[str, list[tuple[int, float]]] = {}
+        self._fighter_history: dict[str, list[tuple[int, float, str | None]]] = {}
         self._indexes_built = False
 
 
@@ -82,13 +84,63 @@ class Data:
                 normalized_name = normalize_fighter_name(fighter_name)
                 self._fight_result_index[(normalized_name, date)] = row
                 self._fighter_history.setdefault(normalized_name, []).append(
-                    (row_days_since, outcome)
+                    (
+                        row_days_since,
+                        outcome,
+                        fight_method_category(str(row["Method"])),
+                    )
                 )
 
         for outcomes in self._fighter_history.values():
             outcomes.sort(key=lambda item: item[0])
 
         self._indexes_built = True
+
+    def _fighter_method_record_before(
+        self,
+        name: str,
+        days_since_cutoff: int,
+    ) -> list[float]:
+        """
+        Return a fighter's pre-cutoff win/loss counts by method category.
+        """
+        self._ensure_indexes()
+        history = self._fighter_history.get(normalize_fighter_name(name), [])
+        wins_by_ko_tko = 0.0
+        wins_by_submission = 0.0
+        wins_by_decision = 0.0
+        losses_by_ko_tko = 0.0
+        losses_by_submission = 0.0
+        losses_by_decision = 0.0
+
+        for row_days_since, outcome, method_category in history:
+            if row_days_since <= days_since_cutoff:
+                continue
+            if method_category is None:
+                continue
+            if outcome == 1.0:
+                if method_category == "ko_tko":
+                    wins_by_ko_tko += 1.0
+                elif method_category == "submission":
+                    wins_by_submission += 1.0
+                elif method_category == "decision":
+                    wins_by_decision += 1.0
+            elif outcome == 0.0:
+                if method_category == "ko_tko":
+                    losses_by_ko_tko += 1.0
+                elif method_category == "submission":
+                    losses_by_submission += 1.0
+                elif method_category == "decision":
+                    losses_by_decision += 1.0
+
+        return [
+            wins_by_ko_tko,
+            wins_by_submission,
+            wins_by_decision,
+            losses_by_ko_tko,
+            losses_by_submission,
+            losses_by_decision,
+        ]
 
     def _fighter_win_rate_before(self, name: str, days_since_cutoff: int) -> float:
         """
@@ -98,7 +150,7 @@ class Data:
         history = self._fighter_history.get(normalize_fighter_name(name), [])
         wins = 0.0
         losses = 0.0
-        for row_days_since, outcome in history:
+        for row_days_since, outcome, _ in history:
             if row_days_since <= days_since_cutoff:
                 continue
             if outcome == 1.0:
@@ -348,6 +400,14 @@ class Data:
             days_since_fight,
             days_before1=days_before1,
             days_before2=days_before2,
+            fighter1_method_record=self._fighter_method_record_before(
+                name1,
+                days_since_fight,
+            ),
+            fighter2_method_record=self._fighter_method_record_before(
+                name2,
+                days_since_fight,
+            ),
         )
 
     def create_standard_training_data(
@@ -428,16 +488,7 @@ class Data:
                 features.append(
                     fighter2_useful_data
                     + fighter1_useful_data
-                    + [
-                        -matchup[0],
-                        -matchup[1],
-                        -matchup[2],
-                        -matchup[3],
-                        matchup[4],
-                        matchup[5],
-                        matchup[7],
-                        matchup[6],
-                    ]
+                    + mirror_matchup_features(matchup)
                 )
                 labels.append(opp_label)
                 fight_dates.append(date_key)
@@ -571,16 +622,7 @@ class Data:
                     days_gap2,
                     days_gap1,
                     opp_label,
-                    [
-                        -matchup[0],
-                        -matchup[1],
-                        -matchup[2],
-                        -matchup[3],
-                        matchup[4],
-                        matchup[5],
-                        matchup[7],
-                        matchup[6],
-                    ],
+                    mirror_matchup_features(matchup),
                 ),
             ):
                 padded1, mask1 = pad_fight_sequence(seq1, max_fights)

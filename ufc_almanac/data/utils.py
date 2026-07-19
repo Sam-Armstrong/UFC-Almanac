@@ -5,9 +5,20 @@ import torch
 from typing import Union
 
 from ufc_almanac.globals import (
+    MATCHUP_STATIC_FEATURE_SIZE,
+    METHOD_RECORD_FEATURE_SIZE,
     RECENCY_HALF_LIFE_DAYS,
     WEIGHT_CLASS_MISMATCH_THRESHOLD,
 )
+
+
+KO_TKO_METHODS = {"KO/TKO", "TKO - Doctor's Stoppage"}
+SUBMISSION_METHODS = {"Submission"}
+DECISION_METHODS = {
+    "Decision - Unanimous",
+    "Decision - Split",
+    "Decision - Majority",
+}
 
 
 def build_matchup_features(
@@ -16,6 +27,8 @@ def build_matchup_features(
     days_since_fight: int,
     days_before1: list[float] | None = None,
     days_before2: list[float] | None = None,
+    fighter1_method_record: list[float] | None = None,
+    fighter2_method_record: list[float] | None = None,
 ) -> list[float]:
     """
     Build matchup-relative features for a head-to-head prediction.
@@ -35,7 +48,7 @@ def build_matchup_features(
     days_since_last_fight1 = float(days_before1[0]) if days_before1 else 0.0
     days_since_last_fight2 = float(days_before2[0]) if days_before2 else 0.0
 
-    return [
+    features = [
         reach1 - reach2,
         height1 - height2,
         age1 - age2,
@@ -45,6 +58,10 @@ def build_matchup_features(
         days_since_last_fight1,
         days_since_last_fight2,
     ]
+    if fighter1_method_record is not None and fighter2_method_record is not None:
+        features.extend(fighter1_method_record)
+        features.extend(fighter2_method_record)
+    return features
 
 def calculate_days_since(day: str, month: str, year: str) -> int:
     """
@@ -68,6 +85,19 @@ def days_since_fight_date(date: str) -> int:
     else:
         year, month, day = date.split("-")
     return calculate_days_since(day, month, year)
+
+def fight_method_category(method: str) -> str | None:
+    """
+    Map a fight result method to ko_tko, submission, decision, or None.
+    """
+    normalized_method = str(method).strip()
+    if normalized_method in KO_TKO_METHODS:
+        return "ko_tko"
+    if normalized_method in SUBMISSION_METHODS:
+        return "submission"
+    if normalized_method in DECISION_METHODS:
+        return "decision"
+    return None
 
 def fight_outcome_for_fighter(fight_row: pandas.Series, fighter_name: str) -> float:
     """
@@ -116,6 +146,25 @@ def load_training_data(path: str) -> Union[torch.Tensor, None]:
     if path.exists():
         return torch.load(path, weights_only=True)
     return None
+
+def mirror_matchup_features(matchup: list[float]) -> list[float]:
+    """
+    Flip matchup features when swapping fighter 1 and fighter 2.
+    """
+    mirrored = [-value for value in matchup[:4]]
+    mirrored.extend(matchup[4:6])
+    mirrored.extend([matchup[7], matchup[6]])
+    method_start = MATCHUP_STATIC_FEATURE_SIZE
+    fighter1_method_record = matchup[
+        method_start : method_start + METHOD_RECORD_FEATURE_SIZE
+    ]
+    fighter2_method_record = matchup[
+        method_start + METHOD_RECORD_FEATURE_SIZE : method_start
+        + 2 * METHOD_RECORD_FEATURE_SIZE
+    ]
+    mirrored.extend(fighter2_method_record)
+    mirrored.extend(fighter1_method_record)
+    return mirrored
 
 def normalize_fighter_name(name: str) -> str:
     """
