@@ -9,6 +9,19 @@ from typing import Any, Union
 from ufc_almanac.globals import STANDARD_TRAINING_DATA_PATH, VERBOSE
 
 
+def apply_normalization_skips(
+    means: torch.Tensor,
+    stds: torch.Tensor,
+    skip_indices: list[int],
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """
+    Leave selected feature indices unnormalized.
+    """
+    for index in skip_indices:
+        means[index] = 0.0
+        stds[index] = 1.0
+    return means, stds
+
 def collect_validation_logits(
     model: nn.Module,
     device: torch.device,
@@ -79,6 +92,17 @@ def compute_feature_normalization(
     stds = features.std(dim=0)
     stds[stds == 0] = 1.0
     return means, stds
+
+def compute_matchup_normalization(
+    matchup_features: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """
+    Compute normalization stats for matchup features, skipping stance one-hot columns.
+    """
+    from ufc_almanac.globals import MATCHUP_UNNORMALIZED_INDICES
+
+    means, stds = compute_feature_normalization(matchup_features)
+    return apply_normalization_skips(means, stds, MATCHUP_UNNORMALIZED_INDICES)
 
 def extract_model_config(model: nn.Module) -> dict[str, Any]:
     """

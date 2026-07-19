@@ -12,7 +12,6 @@ BLOCKED_RESOURCE_TYPES = {"image", "media", "font"}
 MIN_FIGHTS = 1
 MAX_FIGHTS = 8
 VERBOSE = bool(int(os.getenv("VERBOSE", 0)))
-WEIGHT_CLASS_MISMATCH_THRESHOLD = 10
 RECENCY_HALF_LIFE_DAYS = 365.0
 
 STAT_COLUMNS = [
@@ -64,19 +63,28 @@ METHOD_RECORD_COLUMNS = [
     "Losses by Decision",
 ]
 METHOD_RECORD_FEATURE_SIZE = len(METHOD_RECORD_COLUMNS)
-MATCHUP_STATIC_FEATURE_SIZE = 8
+MATCHUP_FIGHTER_PROFILE_COLUMNS = [
+    "Reach",
+    "Height",
+    "Age",
+    "Orthodox",
+    "Southpaw",
+    "Switch",
+]
+MATCHUP_FIGHTER_PROFILE_FEATURE_SIZE = len(MATCHUP_FIGHTER_PROFILE_COLUMNS)
+MATCHUP_DAYS_SINCE_LAST_FIGHT_SIZE = 2
+MATCHUP_STATIC_FEATURE_SIZE = (
+    2 * MATCHUP_FIGHTER_PROFILE_FEATURE_SIZE + MATCHUP_DAYS_SINCE_LAST_FIGHT_SIZE
+)
+MATCHUP_UNNORMALIZED_INDICES = [3, 4, 5, 9, 10, 11]
 
 MATCHUP_FEATURE_COLUMNS = [
-    "Reach Diff",
-    "Height Diff",
-    "Age Diff",
-    "Weight Diff",
-    "Weight Class Mismatch",
-    "Stance Mismatch",
+    *[f"{column} 1" for column in MATCHUP_FIGHTER_PROFILE_COLUMNS],
+    *[f"{column} 2" for column in MATCHUP_FIGHTER_PROFILE_COLUMNS],
     "Days Since Last Fight 1",
     "Days Since Last Fight 2",
-    * [f"{column} 1" for column in METHOD_RECORD_COLUMNS],
-    * [f"{column} 2" for column in METHOD_RECORD_COLUMNS],
+    *[f"{column} 1" for column in METHOD_RECORD_COLUMNS],
+    *[f"{column} 2" for column in METHOD_RECORD_COLUMNS],
 ]
 
 FEATURE_COLUMNS = (
