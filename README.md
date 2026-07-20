@@ -91,7 +91,7 @@ python scripts/train.py --model transformer
 | `--max-fights` | Past fights per fighter / sequence length (`transformer` only) | `8` |
 | `--path` | Path to save trained model weights | `<ModelName>.pt` |
 | `--rebuild-data` | Regenerate training data from CSV files | off |
-| `--optimize-temp` | Optimize temperature scaling on the validation set (`transformer` only) | off |
+| `--optimize-temp` | Optimize temp scaling on the val set | off |
 | `--restarts` | Number of independent training runs | `1` |
 
 Use `--rebuild-data` when the underlying CSV data has been updated. Changing `--max-fights` also regenerates transformer training data when it does not match the saved tensors.
