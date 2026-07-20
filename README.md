@@ -11,21 +11,21 @@ and training scripts for a variety of deep learning models.
 
 ## Next UFC Event Predictions
 
-Event date: July 11, 2026
+Event date: July 25, 2026
 
 <div align="center">
 
 | Fight | Win | Loss | Draw |
 | --- | --- | --- | --- |
-| Conor McGregor vs Max Holloway | 19.6% | 80.1% | 0.3% |
-| Benoit Saint Denis vs Paddy Pimblett | 61.1% | 38.7% | 0.2% |
-| Cory Sandhagen vs Mario Bautista | 41.1% | 58.6% | 0.2% |
-| Brandon Royval vs Lone'er Kavanagh | 48.3% | 51.5% | 0.2% |
-| King Green vs Terrance McKinney | 61.8% | 37.9% | 0.2% |
-| Nikita Krylov vs Robert Whittaker | 42.6% | 57.2% | 0.2% |
-| Cody Garbrandt vs Adrian Yanez | 50.0% | 49.8% | 0.2% |
-| Tracy Cortez vs Wang Cong | 36.5% | 63.2% | 0.3% |
-| Alessandro Costa vs Cody Durden | 70.6% | 29.2% | 0.2% |
+| Magomed Ankalaev vs Bogdan Guskov | 59.9% | 39.9% | 0.2% |
+| Steve Erceg vs Ramazan Temirov | 49.0% | 50.8% | 0.2% |
+| Islam Dulatov vs Wellington Turman | 71.3% | 28.5% | 0.2% |
+| Rizvan Kuniev vs Tyrell Fortune | 44.0% | 55.8% | 0.2% |
+| Valter Walker vs Thomas Petersen | 58.5% | 40.9% | 0.6% |
+| Uran Satybaldiev vs Dustin Jacoby | 38.2% | 61.6% | 0.2% |
+| Santiago Ponzinibbio vs Sam Patterson | 27.1% | 72.7% | 0.2% |
+| Ismael Bonfim vs Axel Sola | 49.0% | 50.8% | 0.2% |
+| Nurullo Aliev vs Mike Davis | 72.7% | 27.1% | 0.2% |
 
 </div>
 
