@@ -22,7 +22,6 @@ Event date: July 25, 2026
 | Islam Dulatov vs Wellington Turman | 71.3% | 28.5% | 0.2% |
 | Rizvan Kuniev vs Tyrell Fortune | 44.0% | 55.8% | 0.2% |
 | Valter Walker vs Thomas Petersen | 58.5% | 40.9% | 0.6% |
-| Uran Satybaldiev vs Dustin Jacoby | 38.2% | 61.6% | 0.2% |
 | Santiago Ponzinibbio vs Sam Patterson | 27.1% | 72.7% | 0.2% |
 | Ismael Bonfim vs Axel Sola | 49.0% | 50.8% | 0.2% |
 | Nurullo Aliev vs Mike Davis | 72.7% | 27.1% | 0.2% |
