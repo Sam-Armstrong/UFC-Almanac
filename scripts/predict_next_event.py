@@ -49,6 +49,42 @@ def table_cell_style(*, section_start: bool = False) -> str:
     return f' style="{" ".join(styles)}"'
 
 
+def overall_column_indices() -> set[int]:
+    win_count = len(WIN_METHOD_COLUMNS)
+    return {1, 1 + win_count}
+
+
+def format_html_cell_content(content: str, *, bold: bool = False) -> str:
+    escaped = html.escape(content)
+    if bold:
+        return f"<strong>{escaped}</strong>"
+    return escaped
+
+
+def format_html_header_cell(
+    label: str,
+    *,
+    section_start: bool = False,
+    bold: bool = False,
+) -> str:
+    return (
+        f"<th{table_cell_style(section_start=section_start)}>"
+        f"{format_html_cell_content(label, bold=bold)}</th>"
+    )
+
+
+def format_html_data_cell(
+    content: str,
+    *,
+    section_start: bool = False,
+    bold: bool = False,
+) -> str:
+    return (
+        f"<td{table_cell_style(section_start=section_start)}>"
+        f"{format_html_cell_content(content, bold=bold)}</td>"
+    )
+
+
 def section_start_indices() -> set[int]:
     win_count = len(WIN_METHOD_COLUMNS)
     loss_count = len(LOSS_METHOD_COLUMNS)
@@ -126,17 +162,28 @@ def _format_predictions_table_markdown(
     fights: list[tuple[str, str]],
     predictions: list[dict[str, float]],
 ) -> str:
-    win_headers = [f"Win ({label})" for label, _ in WIN_METHOD_COLUMNS]
-    loss_headers = [f"Loss ({label})" for label, _ in LOSS_METHOD_COLUMNS]
+    win_headers = [
+        f"Win (**{label}**)" if label == "Overall" else f"Win ({label})"
+        for label, _ in WIN_METHOD_COLUMNS
+    ]
+    loss_headers = [
+        f"Loss (**{label}**)" if label == "Overall" else f"Loss ({label})"
+        for label, _ in LOSS_METHOD_COLUMNS
+    ]
     headers = ["Fight", *win_headers, *loss_headers, "Draw"]
     separator = [":---:" if index > 0 else "---" for index in range(len(headers))]
+    overall_indices = overall_column_indices()
     lines = [
         "| " + " | ".join(headers) + " |",
         "| " + " | ".join(separator) + " |",
     ]
     for (fighter1, fighter2), prediction in zip(fights, predictions):
         row = format_prediction_row(fighter1, fighter2, prediction)
-        lines.append("| " + " | ".join(row) + " |")
+        formatted_row = [
+            f"**{cell}**" if index in overall_indices else cell
+            for index, cell in enumerate(row)
+        ]
+        lines.append("| " + " | ".join(formatted_row) + " |")
     return "\n".join(lines) + "\n"
 
 def _format_predictions_table_html(
@@ -146,20 +193,32 @@ def _format_predictions_table_html(
     win_count = len(WIN_METHOD_COLUMNS)
     loss_count = len(LOSS_METHOD_COLUMNS)
     section_starts = section_start_indices()
+    overall_indices = overall_column_indices()
     win_subheaders = "".join(
-        f"<th{table_cell_style(section_start=index == 0)}>{html.escape(label)}</th>"
+        format_html_header_cell(
+            label,
+            section_start=index == 0,
+            bold=label == "Overall",
+        )
         for index, (label, _) in enumerate(WIN_METHOD_COLUMNS)
     )
     loss_subheaders = "".join(
-        f"<th{table_cell_style(section_start=index == 0)}>{html.escape(label)}</th>"
+        format_html_header_cell(
+            label,
+            section_start=index == 0,
+            bold=label == "Overall",
+        )
         for index, (label, _) in enumerate(LOSS_METHOD_COLUMNS)
     )
     rows = []
     for (fighter1, fighter2), prediction in zip(fights, predictions):
         cells = format_prediction_row(fighter1, fighter2, prediction)
         row_cells = "".join(
-            f"<td{table_cell_style(section_start=index in section_starts)}>"
-            f"{html.escape(cell)}</td>"
+            format_html_data_cell(
+                cell,
+                section_start=index in section_starts,
+                bold=index in overall_indices,
+            )
             for index, cell in enumerate(cells)
         )
         rows.append(f"<tr>{row_cells}</tr>")
