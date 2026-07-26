@@ -6,7 +6,12 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from typing import Any, Union
 
-from ufc_almanac.globals import STANDARD_TRAINING_DATA_PATH, VERBOSE
+from ufc_almanac.globals import (
+    MATCHUP_UNNORMALIZED_INDICES,
+    STANDARD_TRAINING_DATA_PATH,
+    TRANSFORMER_UNNORMALIZED_INDICES,
+    VERBOSE,
+)
 
 
 def apply_normalization_skips(
@@ -15,7 +20,9 @@ def apply_normalization_skips(
     skip_indices: list[int],
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """
-    Leave selected feature indices unnormalized.
+    Leave selected feature indices unchanged (identity scaling).
+
+    Used for unit-interval rates and categorical / one-hot features.
     """
     for index in skip_indices:
         means[index] = 0.0
@@ -84,25 +91,28 @@ def compute_brier_score(logits: torch.Tensor, labels: torch.Tensor) -> float:
 
 def compute_feature_normalization(
     features: torch.Tensor,
+    identity_indices: list[int] | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """
-    Compute per-feature means and standard deviations from a feature tensor.
+    Compute per-feature z-score stats, leaving identity features unchanged.
     """
     means = features.mean(dim=0)
     stds = features.std(dim=0)
     stds[stds == 0] = 1.0
+    if identity_indices:
+        means, stds = apply_normalization_skips(means, stds, identity_indices)
     return means, stds
 
 def compute_matchup_normalization(
     matchup_features: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """
-    Compute normalization stats for matchup features, skipping stance one-hot columns.
+    Compute matchup feature scaling stats with categorical features left as-is.
     """
-    from ufc_almanac.globals import MATCHUP_UNNORMALIZED_INDICES
-
-    means, stds = compute_feature_normalization(matchup_features)
-    return apply_normalization_skips(means, stds, MATCHUP_UNNORMALIZED_INDICES)
+    return compute_feature_normalization(
+        matchup_features,
+        identity_indices=MATCHUP_UNNORMALIZED_INDICES,
+    )
 
 def extract_model_config(model: nn.Module) -> dict[str, Any]:
     """
@@ -141,7 +151,7 @@ def normalize_sequences(
     train_indices: list[int] | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """
-    Normalize a sequence of fighter features and masks.
+    Z-score continuous fight-sequence features; leave unit/categorical features as-is.
     """
     if train_indices is not None:
         fighter1_source = fighter1[train_indices]
@@ -154,9 +164,10 @@ def normalize_sequences(
         combined = torch.cat([fighter1, fighter2], dim=0)
         combined_mask = torch.cat([fighter1_mask, fighter2_mask], dim=0)
     valid_fights = combined[combined_mask.bool()]
-    means = valid_fights.mean(dim=0)
-    stds = valid_fights.std(dim=0)
-    stds[stds == 0] = 1.0
+    means, stds = compute_feature_normalization(
+        valid_fights,
+        identity_indices=TRANSFORMER_UNNORMALIZED_INDICES,
+    )
     fighter1 = (fighter1 - means) / stds
     fighter2 = (fighter2 - means) / stds
     return fighter1, fighter2, means, stds

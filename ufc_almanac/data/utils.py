@@ -86,6 +86,36 @@ def fight_method_category(method: str) -> str | None:
         return "decision"
     return None
 
+def fight_method_one_hot_features(method: str) -> list[float]:
+    """
+    Encode a fight method as ko/tko, submission, and decision one-hot features.
+    """
+    category = fight_method_category(method)
+    return [
+        1.0 if category == "ko_tko" else 0.0,
+        1.0 if category == "submission" else 0.0,
+        1.0 if category == "decision" else 0.0,
+    ]
+
+def finish_rate_from_method_record(method_record: list[float]) -> float:
+    """
+    Return the share of wins that ended by KO/TKO or submission.
+    """
+    wins_by_finish = method_record[0] + method_record[1]
+    total_wins = wins_by_finish + method_record[2]
+    return wins_by_finish / max(1.0, total_wins)
+
+def opponent_style_rates(row: pandas.Series) -> list[float]:
+    """
+    Return key pace stats used as opponent style context.
+    """
+    minutes = max(int(row["Time"]), 1) / 60.0
+    return [
+        round(int(row["Sig Strikes Landed"]) / minutes, 4),
+        round(int(row["Takedowns"]) / minutes, 4),
+        round(int(row["Submission Attempts"]) / minutes, 4),
+    ]
+
 def fight_method_label(method: str) -> str | None:
     """
     Map a fight result method to a detailed outcome-method label suffix.
@@ -301,6 +331,7 @@ def per_minute_stats(row: pandas.Series) -> list[float]:
     clinch_strikes_taken = int(row["Clinch Strikes Taken"])
     ground_strikes = int(row["Ground Strikes"])
     ground_strikes_taken = int(row["Ground Strikes Taken"])
+    sig_strike_total = max(sig_strikes_landed + sig_strikes_absorbed, 1)
 
     return [
         round(knockdown / minutes, 4),
@@ -320,6 +351,11 @@ def per_minute_stats(row: pandas.Series) -> list[float]:
         round(clinch_strikes_taken / minutes, 4),
         round(ground_strikes / minutes, 4),
         round(ground_strikes_taken / minutes, 4),
+        round(minutes, 4),
+        round(sig_strikes_landed / max(sig_strikes_attempted, 1), 4),
+        round((sig_strikes_landed - sig_strikes_absorbed) / minutes, 4),
+        round(takedowns / max(takedown_attempts, 1), 4),
+        round(sig_strikes_landed / sig_strike_total, 4),
     ]
 
 def recency_weight(days_before: float, half_life_days: float = RECENCY_HALF_LIFE_DAYS) -> float:

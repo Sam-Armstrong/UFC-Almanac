@@ -10,9 +10,8 @@ from tqdm import tqdm
 
 from ufc_almanac.data import Data
 from ufc_almanac.globals import (
-    FIGHTER_FEATURE_COLUMNS,
+    FEATURE_UNNORMALIZED_INDICES,
     INPUT_SIZE,
-    MATCHUP_UNNORMALIZED_INDICES,
     MAX_FIGHTS,
     NUM_CLASSES,
     STANDARD_TRAINING_DATA_PATH,
@@ -23,7 +22,6 @@ from ufc_almanac.helpers import get_device, resolve_checkpoint_paths, resolve_mo
 from ufc_almanac.models import MODELS
 from ufc_almanac.training.dataset import FightSequenceDataset
 from ufc_almanac.training.utils import (
-    apply_normalization_skips,
     collect_validation_logits,
     compute_brier_score,
     compute_feature_normalization,
@@ -168,10 +166,10 @@ def train_ff(
         val_fraction,
         training_data.get("fight_dates"),
     )
-    means, stds = compute_feature_normalization(features[train_indices])
-    matchup_start = len(FIGHTER_FEATURE_COLUMNS) * 2
-    skip_indices = [matchup_start + index for index in MATCHUP_UNNORMALIZED_INDICES]
-    means, stds = apply_normalization_skips(means, stds, skip_indices)
+    means, stds = compute_feature_normalization(
+        features[train_indices],
+        identity_indices=FEATURE_UNNORMALIZED_INDICES,
+    )
     features = normalize_features(features, means, stds)
 
     dataset = TensorDataset(features, labels)

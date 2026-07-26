@@ -8,14 +8,17 @@ from ufc_almanac.data.utils import (
     build_matchup_features,
     days_since_fight_date,
     fight_method_category,
+    fight_method_one_hot_features,
     fight_outcome_for_fighter,
-    filter_fighter_rows,
     fighter_age_at_fight,
+    filter_fighter_rows,
+    finish_rate_from_method_record,
     load_csv,
     load_training_data,
     mirror_matchup_features,
     normalize_fighter_name,
     opponent_name_for_fighter,
+    opponent_style_rates,
     opposite_outcome_method_label,
     outcome_method_label,
     pad_fight_sequence,
@@ -23,6 +26,7 @@ from ufc_almanac.data.utils import (
     parse_date_sort_key,
     per_minute_stats,
     recency_weight,
+    stance_binary_features,
 )
 from ufc_almanac.exceptions import (
     MinFightsException,
@@ -30,6 +34,7 @@ from ufc_almanac.exceptions import (
     MissingFighterDataException,
 )
 from ufc_almanac.globals import (
+    FIGHT_METHOD_COLUMNS,
     FIGHTER_DATA_CSV,
     MAX_FIGHTS,
     MIN_FIGHTS,
@@ -37,6 +42,7 @@ from ufc_almanac.globals import (
     RESULTS_CSV,
     STATS_CSV,
     STANDARD_TRAINING_DATA_PATH,
+    TRANSFORMER_OPPONENT_COLUMNS,
     TRANSFORMER_STANDARD_TRAINING_DATA_PATH,
     VERBOSE,
 )
@@ -57,7 +63,9 @@ class Data:
         self.transformer_training_data = load_training_data(transformer_training_path)
         self._fight_result_index: dict[tuple[str, str], pandas.Series] = {}
         self._fighter_history: dict[str, list[tuple[int, float, str | None]]] = {}
+        self._fighter_style_history: dict[str, list[tuple[int, list[float]]]] = {}
         self._indexes_built = False
+        self._style_index_built = False
 
 
     # Private methods
@@ -97,6 +105,27 @@ class Data:
             outcomes.sort(key=lambda item: item[0])
 
         self._indexes_built = True
+
+    def _ensure_style_index(self) -> None:
+        """
+        Build per-fighter pace/style history from fight stats (on first use).
+        """
+        if self._style_index_built:
+            return
+
+        for _, row in self.fight_stats.iterrows():
+            normalized_name = normalize_fighter_name(str(row["Name"]))
+            self._fighter_style_history.setdefault(normalized_name, []).append(
+                (
+                    days_since_fight_date(str(row["Date"])),
+                    opponent_style_rates(row),
+                )
+            )
+
+        for history in self._fighter_style_history.values():
+            history.sort(key=lambda item: item[0])
+
+        self._style_index_built = True
 
     def _fighter_method_record_before(
         self,
@@ -161,6 +190,28 @@ class Data:
                 losses += 1.0
         return wins / max(1.0, wins + losses)
 
+    def _fighter_style_rates_before(
+        self,
+        name: str,
+        days_since_cutoff: int,
+    ) -> list[float]:
+        """
+        Return average sig-strike, takedown, and submission pace before a cutoff.
+        """
+        self._ensure_style_index()
+        history = self._fighter_style_history.get(normalize_fighter_name(name), [])
+        totals = [0.0, 0.0, 0.0]
+        count = 0.0
+        for row_days_since, rates in history:
+            if row_days_since <= days_since_cutoff:
+                continue
+            for index, rate in enumerate(rates):
+                totals[index] += rate
+            count += 1.0
+        if count == 0.0:
+            return [0.0, 0.0, 0.0]
+        return [total / count for total in totals]
+
     def _get_sorted_past_fights(
         self,
         name: str,
@@ -213,20 +264,41 @@ class Data:
         """
         Build opponent context features for a fighter's past fight.
 
-        Returns height, reach, age, weight, opponent win rate, and fight outcome.
-        Missing opponent data is represented with zeros.
+        Returns size, pre-fight win/finish rates, method record, style pace, and
+        fight outcome. Missing opponent profile fields are represented with zeros.
         """
+        opponent_feature_size = len(TRANSFORMER_OPPONENT_COLUMNS)
         fight_row = self._lookup_fight_result(fighter_name, fight_date)
         if fight_row is None:
-            return [0.0] * 6
+            return [0.0] * opponent_feature_size
 
         opponent_name = opponent_name_for_fighter(fight_row, fighter_name)
         opponent_profile = self._safe_lookup_fighter_profile(opponent_name)
         fight_days_since = days_since_fight_date(fight_date)
         outcome = fight_outcome_for_fighter(fight_row, fighter_name)
+        method_record = self._fighter_method_record_before(
+            opponent_name,
+            fight_days_since,
+        )
+        style_rates = self._fighter_style_rates_before(
+            opponent_name,
+            fight_days_since,
+        )
+        win_rate = self._fighter_win_rate_before(opponent_name, fight_days_since)
+        finish_rate = finish_rate_from_method_record(method_record)
 
         if opponent_profile is None:
-            return [0.0, 0.0, 0.0, 0.0, 0.0, outcome]
+            return [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                win_rate,
+                finish_rate,
+                *method_record,
+                *style_rates,
+                outcome,
+            ]
 
         return [
             float(opponent_profile["Height"]),
@@ -237,7 +309,10 @@ class Data:
                 days_since_fight,
             ),
             float(opponent_profile["Weight"]),
-            self._fighter_win_rate_before(opponent_name, fight_days_since),
+            win_rate,
+            finish_rate,
+            *method_record,
+            *style_rates,
             outcome,
         ]
 
@@ -267,7 +342,6 @@ class Data:
         height = float(fighter_info["Height"])
         reach = float(fighter_info["Reach"])
         weight = float(fighter_info["Weight"])
-        stance = float(fighter_info["Stance"])
         years_since = days_since_fight // 365
 
         fighter_useful_data = [
@@ -275,13 +349,15 @@ class Data:
             reach,
             float(fighter_info["Age"] - years_since),
             weight,
-            stance,
+            *stance_binary_features(float(fighter_info["Stance"])),
         ]
 
         weighted_stats: list[float] = []
         total_weight = 0.0
         recent_win_rate_weight = 0.0
         opponent_win_rate_weight = 0.0
+        opponent_finish_rate_weight = 0.0
+        method_weights = [0.0] * len(FIGHT_METHOD_COLUMNS)
         days_since_last_fight = 0.0
 
         for index, row in enumerate(recent_fights):
@@ -301,6 +377,18 @@ class Data:
                     row_days_since,
                 )
                 opponent_win_rate_weight += opponent_win_rate * weight_value
+                opponent_method_record = self._fighter_method_record_before(
+                    opponent_name,
+                    row_days_since,
+                )
+                opponent_finish_rate_weight += (
+                    finish_rate_from_method_record(opponent_method_record)
+                    * weight_value
+                )
+                for method_index, method_value in enumerate(
+                    fight_method_one_hot_features(str(fight_row["Method"]))
+                ):
+                    method_weights[method_index] += method_value * weight_value
 
             if not weighted_stats:
                 weighted_stats = [0.0] * len(per_minute_stats(row))
@@ -318,6 +406,12 @@ class Data:
         )
         fighter_useful_data.append(round(recent_win_rate_weight / total_weight, 4))
         fighter_useful_data.append(round(opponent_win_rate_weight / total_weight, 4))
+        fighter_useful_data.append(
+            round(opponent_finish_rate_weight / total_weight, 4)
+        )
+        fighter_useful_data.extend(
+            round(method_weight / total_weight, 4) for method_weight in method_weights
+        )
         fighter_useful_data.append(days_since_last_fight)
 
         return fighter_useful_data
@@ -349,7 +443,7 @@ class Data:
         reach = float(fighter_info["Reach"])
         age = float(fighter_info["Age"])
         weight = float(fighter_info["Weight"])
-        stance = float(fighter_info["Stance"])
+        stance_features = stance_binary_features(float(fighter_info["Stance"]))
 
         sequence = []
         days_before = []
@@ -359,13 +453,16 @@ class Data:
             fight_date = str(row["Date"])
             row_days_since = days_since_fight_date(fight_date)
             years_since = (row_days_since - days_since_fight) // 365
+            fight_row = self._lookup_fight_result(name, fight_date)
+            method = str(fight_row["Method"]) if fight_row is not None else ""
             fight_features = [
                 height,
                 reach,
                 age - years_since,
                 weight,
-                stance,
+                *stance_features,
                 *per_minute_stats(row),
+                *fight_method_one_hot_features(method),
                 *self._opponent_context_for_past_fight(
                     name,
                     fight_date,

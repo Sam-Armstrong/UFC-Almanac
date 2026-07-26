@@ -33,6 +33,17 @@ STAT_COLUMNS = [
     "Clinch Strikes Taken PM",
     "Ground Strikes PM",
     "Ground Strikes Taken PM",
+    "Fight Duration Minutes",
+    "Sig Strike Accuracy",
+    "Sig Strike Differential PM",
+    "Takedown Accuracy",
+    "Strike Defense",
+]
+
+FIGHT_METHOD_COLUMNS = [
+    "Method KO/TKO",
+    "Method Submission",
+    "Method Decision",
 ]
 
 FIGHTER_PROFILE_COLUMNS = [
@@ -40,12 +51,18 @@ FIGHTER_PROFILE_COLUMNS = [
     "Reach",
     "Age",
     "Weight",
-    "Stance",
+    "Orthodox",
+    "Southpaw",
+    "Switch",
 ]
 
 FIGHTER_FORM_COLUMNS = [
     "Recent Win Rate",
     "Avg Opponent Win Rate",
+    "Avg Opponent Finish Rate",
+    "Recent Method KO/TKO",
+    "Recent Method Submission",
+    "Recent Method Decision",
     "Days Since Last Fight",
 ]
 
@@ -77,7 +94,6 @@ MATCHUP_DAYS_SINCE_LAST_FIGHT_SIZE = 2
 MATCHUP_STATIC_FEATURE_SIZE = (
     2 * MATCHUP_FIGHTER_PROFILE_FEATURE_SIZE + MATCHUP_DAYS_SINCE_LAST_FIGHT_SIZE
 )
-MATCHUP_UNNORMALIZED_INDICES = [3, 4, 5, 9, 10, 11]
 
 MATCHUP_FEATURE_COLUMNS = [
     *[f"{column} 1" for column in MATCHUP_FIGHTER_PROFILE_COLUMNS],
@@ -93,6 +109,58 @@ FEATURE_COLUMNS = (
     + [f"{column} 2" for column in FIGHTER_FEATURE_COLUMNS]
     + MATCHUP_FEATURE_COLUMNS
 )
+
+# Feature scaling policy:
+# - standard: z-score using train-set mean/std
+# - unit: already in [0, 1]; leave as-is (pre-normalized)
+# - categorical: one-hot / binary / ordinal codes; leave as-is
+UNIT_INTERVAL_FEATURE_NAMES = frozenset(
+    {
+        "Strike Accuracy",
+        "Sig Strike Accuracy",
+        "Takedown Accuracy",
+        "Strike Defense",
+        "Recent Win Rate",
+        "Avg Opponent Win Rate",
+        "Avg Opponent Finish Rate",
+        "Recent Method KO/TKO",
+        "Recent Method Submission",
+        "Recent Method Decision",
+        "Opponent Win Rate",
+        "Opponent Finish Rate",
+    }
+)
+CATEGORICAL_FEATURE_NAMES = frozenset(
+    {
+        "Orthodox",
+        "Southpaw",
+        "Switch",
+        "Method KO/TKO",
+        "Method Submission",
+        "Method Decision",
+        "Fight Outcome",
+    }
+)
+IDENTITY_FEATURE_NAMES = UNIT_INTERVAL_FEATURE_NAMES | CATEGORICAL_FEATURE_NAMES
+
+
+def _feature_base_name(column: str) -> str:
+    if column.endswith(" 1") or column.endswith(" 2"):
+        return column[:-2]
+    return column
+
+
+def identity_feature_indices(columns: list[str]) -> list[int]:
+    """
+    Return indices for features that should not be z-score standardized.
+    """
+    return [
+        index
+        for index, column in enumerate(columns)
+        if _feature_base_name(column) in IDENTITY_FEATURE_NAMES
+    ]
+
+
 OUTCOME_METHOD_LABELS = [
     "Draw",
     "Win - KO/TKO",
@@ -118,14 +186,32 @@ TRANSFORMER_OPPONENT_COLUMNS = [
     "Opponent Age",
     "Opponent Weight",
     "Opponent Win Rate",
+    "Opponent Finish Rate",
+    "Opponent Wins by KO/TKO",
+    "Opponent Wins by Submission",
+    "Opponent Wins by Decision",
+    "Opponent Losses by KO/TKO",
+    "Opponent Losses by Submission",
+    "Opponent Losses by Decision",
+    "Opponent Sig Strikes Landed PM",
+    "Opponent Takedowns PM",
+    "Opponent Submission Attempts PM",
     "Fight Outcome",
 ]
 
 TRANSFORMER_FEATURE_COLUMNS = (
     FIGHTER_PROFILE_COLUMNS
     + STAT_COLUMNS
+    + FIGHT_METHOD_COLUMNS
     + TRANSFORMER_OPPONENT_COLUMNS
 )
 TRANSFORMER_FEATURE_SIZE = len(TRANSFORMER_FEATURE_COLUMNS)
 TRANSFORMER_STATIC_FEATURE_SIZE = len(FIGHTER_PROFILE_COLUMNS)
-TRANSFORMER_FIGHT_FEATURE_SIZE = len(STAT_COLUMNS) + len(TRANSFORMER_OPPONENT_COLUMNS)
+TRANSFORMER_FIGHT_FEATURE_SIZE = (
+    len(STAT_COLUMNS) + len(FIGHT_METHOD_COLUMNS) + len(TRANSFORMER_OPPONENT_COLUMNS)
+)
+
+# Identity indices: unit-interval and categorical features (no z-score).
+FEATURE_UNNORMALIZED_INDICES = identity_feature_indices(FEATURE_COLUMNS)
+MATCHUP_UNNORMALIZED_INDICES = identity_feature_indices(MATCHUP_FEATURE_COLUMNS)
+TRANSFORMER_UNNORMALIZED_INDICES = identity_feature_indices(TRANSFORMER_FEATURE_COLUMNS)
