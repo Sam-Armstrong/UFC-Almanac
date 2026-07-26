@@ -14,6 +14,7 @@ from ufc_almanac.globals import (
     INPUT_SIZE,
     MATCHUP_UNNORMALIZED_INDICES,
     MAX_FIGHTS,
+    NUM_CLASSES,
     STANDARD_TRAINING_DATA_PATH,
     TRANSFORMER_STANDARD_TRAINING_DATA_PATH,
     TRANSFORMER_FEATURE_SIZE,
@@ -600,6 +601,8 @@ def main() -> None:
                 needs_rebuild = True
             if existing_data["fighter1"].shape[-1] != TRANSFORMER_FEATURE_SIZE:
                 needs_rebuild = True
+            if existing_data.get("num_classes") != NUM_CLASSES:
+                needs_rebuild = True
         if needs_rebuild:
             data_handler = Data()
             data_handler.create_transformer_training_data(max_fights=args.max_fights)
@@ -610,6 +613,8 @@ def main() -> None:
             if "fight_dates" not in existing_data:
                 needs_rebuild = True
             if existing_data["features"].shape[1] != INPUT_SIZE:
+                needs_rebuild = True
+            if existing_data.get("num_classes") != NUM_CLASSES:
                 needs_rebuild = True
         if needs_rebuild:
             data_handler = Data()

@@ -7,6 +7,7 @@ STATS_CSV = "data/FightStats.csv"
 STANDARD_TRAINING_DATA_PATH = "data/StandardTrainingData.pt"
 TRANSFORMER_STANDARD_TRAINING_DATA_PATH = "data/TransformerTrainingData.pt"
 CHECKPOINTS_DIR = "artifacts/checkpoints"
+CORE_TRANSFORMER_MODEL_PATH = "artifacts/core/transformer_model.pt"
 
 BLOCKED_RESOURCE_TYPES = {"image", "media", "font"}
 MIN_FIGHTS = 1
@@ -92,7 +93,21 @@ FEATURE_COLUMNS = (
     + [f"{column} 2" for column in FIGHTER_FEATURE_COLUMNS]
     + MATCHUP_FEATURE_COLUMNS
 )
-LABEL_COLUMNS = ["Win", "Loss", "Draw"]
+OUTCOME_METHOD_LABELS = [
+    "Draw",
+    "Win - KO/TKO",
+    "Loss - KO/TKO",
+    "Win - Submission",
+    "Loss - Submission",
+    "Win - Unanimous Decision",
+    "Loss - Unanimous Decision",
+    "Win - Split Decision",
+    "Loss - Split Decision",
+    "Win - Majority Decision",
+    "Loss - Majority Decision",
+]
+OUTCOME_LABELS = ["Win", "Loss", "Draw"]
+LABEL_COLUMNS = OUTCOME_METHOD_LABELS
 INPUT_SIZE = len(FEATURE_COLUMNS)
 NUM_CLASSES = len(LABEL_COLUMNS)
 MATCHUP_FEATURE_SIZE = len(MATCHUP_FEATURE_COLUMNS)

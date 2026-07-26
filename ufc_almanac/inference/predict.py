@@ -4,22 +4,26 @@ from pathlib import Path
 import torch
 from typing import Optional
 
+from ufc_almanac.data.utils import aggregate_outcome_probabilities
 from ufc_almanac.inference.utils import (
+    infer_num_classes,
     infer_transformer_config,
     load_model_state_dict,
     load_normalization_artifacts,
+    validate_transformer_checkpoint,
 )
 from ufc_almanac.data import Data, pad_fight_sequence, pad_temporal_sequence
 from ufc_almanac.helpers import get_device, resolve_checkpoint_paths, resolve_model
 from ufc_almanac.models import MODELS
 from ufc_almanac.models.transformer import apply_temperature
 from ufc_almanac.globals import (
+    CORE_TRANSFORMER_MODEL_PATH,
     INPUT_SIZE,
     LABEL_COLUMNS,
     MATCHUP_FEATURE_SIZE,
     MAX_FIGHTS,
     MIN_FIGHTS,
-    NUM_CLASSES,
+    OUTCOME_LABELS,
     TRANSFORMER_FEATURE_SIZE,
     TRANSFORMER_STANDARD_TRAINING_DATA_PATH,
 )
@@ -41,7 +45,11 @@ class FightPredictor:
         )
         normalization = self._load_normalization()
         state_dict = self._load_state_dict()
+        if self.is_transformer and state_dict is not None:
+            validate_transformer_checkpoint(state_dict)
         model_kwargs = self._resolve_model_kwargs(state_dict, normalization.get("config", {}))
+        self.num_classes = model_kwargs.pop("num_classes")
+        self.class_labels = self._resolve_class_labels(self.num_classes)
         self.max_fights = model_kwargs.get("max_fights", MAX_FIGHTS)
         self.model = model(**model_kwargs).to(self.device)
 
@@ -66,11 +74,23 @@ class FightPredictor:
     def _load_normalization(self) -> dict:
         return load_normalization_artifacts(self.normalization_path, self.device)
 
+    def _resolve_class_labels(self, num_classes: int) -> list[str]:
+        if num_classes == len(LABEL_COLUMNS):
+            return LABEL_COLUMNS
+        if num_classes == len(OUTCOME_LABELS):
+            return OUTCOME_LABELS
+        raise ValueError(
+            f"Unsupported number of model classes: {num_classes}. "
+            f"Expected {len(LABEL_COLUMNS)} outcome-method classes or "
+            f"{len(OUTCOME_LABELS)} legacy outcome classes."
+        )
+
     def _resolve_model_kwargs(
         self,
         state_dict: Optional[dict[str, torch.Tensor]],
         saved_config: dict,
     ) -> dict:
+        num_classes = infer_num_classes(state_dict) if state_dict else len(LABEL_COLUMNS)
         if self.is_transformer:
             config = infer_transformer_config(state_dict) if state_dict else {}
             config.update(saved_config)
@@ -81,9 +101,13 @@ class FightPredictor:
                 "d_model": int(config.get("d_model", 64)),
                 "num_layers": int(config.get("num_layers", 2)),
                 "dropout": float(config.get("dropout", 0.1)),
+                "num_classes": num_classes,
             }
 
-        return {"dropout": float(saved_config.get("dropout", 0.0))}
+        return {
+            "dropout": float(saved_config.get("dropout", 0.0)),
+            "num_classes": num_classes,
+        }
 
     def _resolve_max_fights(self) -> int:
         training_path = Path(TRANSFORMER_STANDARD_TRAINING_DATA_PATH)
@@ -214,10 +238,16 @@ class FightPredictor:
             ).squeeze(0),
             decimals=sig_figs,
         )
-        return {
-            LABEL_COLUMNS[index]: probabilities[index].item()
-            for index in range(NUM_CLASSES)
+        class_probabilities = {
+            self.class_labels[index]: probabilities[index].item()
+            for index in range(self.num_classes)
         }
+        if self.num_classes == len(LABEL_COLUMNS):
+            return {
+                **class_probabilities,
+                **aggregate_outcome_probabilities(class_probabilities),
+            }
+        return class_probabilities
 
     def predict(
         self,
@@ -227,7 +257,7 @@ class FightPredictor:
         sig_figs: int = 4,
     ) -> dict[str, float]:
         """
-        Return win / loss / draw probabilities for fighter 1.
+        Return outcome-method and aggregated win / loss / draw probabilities for fighter 1.
         """
         self.model.eval()
         features = self._prepare_features(
@@ -312,7 +342,8 @@ class FightPredictor:
             sig_figs: Number of significant figures to round the probabilities to
 
         Returns:
-            Dictionary containing win / loss / draw probabilities for fighter 1
+            Dictionary containing outcome-method probabilities and aggregated
+            win / loss / draw probabilities for fighter 1
         """
         if min_fights is None:
             min_fights = MIN_FIGHTS
@@ -369,13 +400,22 @@ class FightPredictor:
         )
 
 
+def resolve_default_model_path(model: type[torch.nn.Module]) -> Path | None:
+    """
+    Return the default inference checkpoint for models that ship a core artifact.
+    """
+    if model.__name__ == "TransformerModel":
+        return Path(CORE_TRANSFORMER_MODEL_PATH)
+    return None
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Predict fight outcomes.")
     parser.add_argument(
         "--model",
-        default="linear",
+        default="transformer",
         choices=sorted(MODELS),
-        help="model architecture to load (default: linear)",
+        help="model architecture to load (default: transformer)",
     )
     parser.add_argument(
         "--path",
@@ -389,9 +429,11 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    model = resolve_model(args.model, MODELS)
+    model_path = args.path if args.path is not None else resolve_default_model_path(model)
     predictor = FightPredictor(
-        resolve_model(args.model, MODELS),
-        model_path=args.path,
+        model,
+        model_path=model_path,
     )
     data = Data()
 
@@ -417,12 +459,28 @@ def main() -> None:
             fighter2,
             str(date.today()),
         )
-        percentages = {label: value * 100 for label, value in result.items()}
+        outcome_percentages = {
+            label: result[label] * 100 for label in OUTCOME_LABELS
+        }
         print(
-            f"{fighter1} Win: {percentages['Win']:.2f}%, "
-            f"{fighter1} Loss: {percentages['Loss']:.2f}%, "
-            f"Draw: {percentages['Draw']:.2f}%"
+            f"{fighter1} Win: {outcome_percentages['Win']:.2f}%, "
+            f"{fighter1} Loss: {outcome_percentages['Loss']:.2f}%, "
+            f"Draw: {outcome_percentages['Draw']:.2f}%"
         )
+        method_percentages = {
+            label: result[label] * 100
+            for label in predictor.class_labels
+            if label != "Draw"
+        }
+        top_methods = sorted(
+            method_percentages.items(),
+            key=lambda item: item[1],
+            reverse=True,
+        )[:3]
+        method_summary = ", ".join(
+            f"{label}: {value:.2f}%" for label, value in top_methods
+        )
+        print(f"Top methods: {method_summary}")
 
 
 if __name__ == "__main__":

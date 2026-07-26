@@ -2,15 +2,48 @@ from pathlib import Path
 import torch
 from typing import Any, Optional, Union
 
+from ufc_almanac.globals import NUM_CLASSES
+
+
+def is_modern_transformer_checkpoint(state_dict: dict[str, torch.Tensor]) -> bool:
+    """
+    Return True when a checkpoint matches the current transformer architecture.
+    """
+    return "static_proj.weight" in state_dict
+
+
+def validate_transformer_checkpoint(state_dict: dict[str, torch.Tensor]) -> None:
+    """
+    Raise a clear error when a checkpoint cannot be loaded by TransformerModel.
+    """
+    if is_modern_transformer_checkpoint(state_dict):
+        return
+    raise ValueError(
+        "The checkpoint uses a legacy transformer architecture that is no longer "
+        "supported. Retrain with `ufc-train --model transformer`, or pass --path to "
+        "a current checkpoint such as artifacts/core/transformer_model.pt."
+    )
+
+
+def infer_num_classes(state_dict: dict[str, torch.Tensor]) -> int:
+    """
+    Infer the number of output classes from a saved state dict.
+    """
+    if "classifier.3.weight" in state_dict:
+        return int(state_dict["classifier.3.weight"].shape[0])
+    if "fc3.weight" in state_dict:
+        return int(state_dict["fc3.weight"].shape[0])
+    if "linear.weight" in state_dict:
+        return int(state_dict["linear.weight"].shape[0])
+    return NUM_CLASSES
+
 
 def infer_transformer_config(state_dict: dict[str, torch.Tensor]) -> dict[str, int]:
     """
     Infer transformer architecture from a saved state dict.
     """
-    if "static_proj.weight" in state_dict:
-        d_model = state_dict["static_proj.weight"].shape[0]
-    else:
-        d_model = state_dict["input_proj.weight"].shape[0]
+    validate_transformer_checkpoint(state_dict)
+    d_model = state_dict["static_proj.weight"].shape[0]
     layer_indices = [
         int(key.split(".")[2])
         for key in state_dict

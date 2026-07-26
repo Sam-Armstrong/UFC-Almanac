@@ -3,7 +3,7 @@ import datetime
 from pathlib import Path
 
 from ufc_almanac.data import Data
-from ufc_almanac.globals import VERBOSE
+from ufc_almanac.globals import CORE_TRANSFORMER_MODEL_PATH, VERBOSE
 from ufc_almanac.inference import FightPredictor
 from ufc_almanac.models import TransformerModel
 from ufc_almanac.scraping import scrape_next_event
@@ -20,9 +20,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--path",
         type=Path,
-        default=Path("artifacts/core/transformer_model.pt"),
+        default=Path(CORE_TRANSFORMER_MODEL_PATH),
         help="path to trained model weights "
-        "(default: artifacts/core/transformer_model.pt)",
+        f"(default: {CORE_TRANSFORMER_MODEL_PATH})",
     )
     parser.add_argument(
         "--readme",

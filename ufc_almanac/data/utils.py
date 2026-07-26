@@ -9,6 +9,8 @@ from ufc_almanac.globals import (
     MATCHUP_FIGHTER_PROFILE_FEATURE_SIZE,
     MATCHUP_STATIC_FEATURE_SIZE,
     METHOD_RECORD_FEATURE_SIZE,
+    OUTCOME_LABELS,
+    OUTCOME_METHOD_LABELS,
     RECENCY_HALF_LIFE_DAYS,
 )
 
@@ -83,6 +85,64 @@ def fight_method_category(method: str) -> str | None:
     if normalized_method in DECISION_METHODS:
         return "decision"
     return None
+
+def fight_method_label(method: str) -> str | None:
+    """
+    Map a fight result method to a detailed outcome-method label suffix.
+    """
+    normalized_method = str(method).strip()
+    if normalized_method in KO_TKO_METHODS:
+        return "KO/TKO"
+    if normalized_method in SUBMISSION_METHODS:
+        return "Submission"
+    if normalized_method == "Decision - Unanimous":
+        return "Unanimous Decision"
+    if normalized_method == "Decision - Split":
+        return "Split Decision"
+    if normalized_method == "Decision - Majority":
+        return "Majority Decision"
+    return None
+
+def outcome_method_label(result: int, method: str) -> int | None:
+    """
+    Encode fighter 1's fight outcome and method as a class index.
+    """
+    if result == 4:
+        return None
+    if result == 3:
+        return OUTCOME_METHOD_LABELS.index("Draw")
+    method_label = fight_method_label(method)
+    if method_label is None:
+        return None
+    outcome = "Win" if result == 1 else "Loss"
+    return OUTCOME_METHOD_LABELS.index(f"{outcome} - {method_label}")
+
+def opposite_outcome_method_label(label: int) -> int:
+    """
+    Flip a fighter 1 outcome-method label to fighter 2's perspective.
+    """
+    label_name = OUTCOME_METHOD_LABELS[label]
+    if label_name == "Draw":
+        return label
+    if label_name.startswith("Win - "):
+        return OUTCOME_METHOD_LABELS.index(f"Loss - {label_name[6:]}")
+    return OUTCOME_METHOD_LABELS.index(f"Win - {label_name[7:]}")
+
+def aggregate_outcome_probabilities(
+    class_probabilities: dict[str, float],
+) -> dict[str, float]:
+    """
+    Sum detailed outcome-method probabilities into win / loss / draw totals.
+    """
+    aggregated = {label: 0.0 for label in OUTCOME_LABELS}
+    for label, probability in class_probabilities.items():
+        if label == "Draw":
+            aggregated["Draw"] += probability
+        elif label.startswith("Win - "):
+            aggregated["Win"] += probability
+        elif label.startswith("Loss - "):
+            aggregated["Loss"] += probability
+    return aggregated
 
 def fight_outcome_for_fighter(fight_row: pandas.Series, fighter_name: str) -> float:
     """
@@ -190,11 +250,6 @@ def opponent_name_for_fighter(fight_row: pandas.Series, fighter_name: str) -> st
     if normalize_fighter_name(fighter_name) == normalize_fighter_name(fighter1):
         return fighter2
     return fighter1
-
-def opposite_label(result: int) -> int:
-    if result == 3:
-        return 2
-    return 1 if result == 1 else 0
 
 def pad_fight_sequence(
     sequence: list[list[float]],

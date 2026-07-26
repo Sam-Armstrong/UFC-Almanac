@@ -16,7 +16,8 @@ from ufc_almanac.data.utils import (
     mirror_matchup_features,
     normalize_fighter_name,
     opponent_name_for_fighter,
-    opposite_label,
+    opposite_outcome_method_label,
+    outcome_method_label,
     pad_fight_sequence,
     pad_temporal_sequence,
     parse_date_sort_key,
@@ -32,6 +33,7 @@ from ufc_almanac.globals import (
     FIGHTER_DATA_CSV,
     MAX_FIGHTS,
     MIN_FIGHTS,
+    NUM_CLASSES,
     RESULTS_CSV,
     STATS_CSV,
     STANDARD_TRAINING_DATA_PATH,
@@ -457,6 +459,9 @@ class Data:
             result = int(row["Result"])
 
             if date > "01/01/2010" and result != 4:
+                label = outcome_method_label(result, str(row["Method"]))
+                if label is None:
+                    continue
 
                 # finds the stats of the two fighters prior to the date of the given fight occuring
                 try:
@@ -470,8 +475,7 @@ class Data:
                     if VERBOSE: tqdm.write(f"Skipping fight: {e}")
                     continue
 
-                label = result - 1
-                opp_label = opposite_label(result)
+                opp_label = opposite_outcome_method_label(label)
                 date_key = parse_date_sort_key(date)
                 matchup = self.get_matchup_features(
                     name1,
@@ -499,6 +503,7 @@ class Data:
             "features": torch.tensor(features, dtype=torch.float32),
             "labels": torch.tensor(labels, dtype=torch.long),
             "fight_dates": torch.tensor(fight_dates, dtype=torch.long),
+            "num_classes": NUM_CLASSES,
         }
         torch.save(self.training_data, save_path)
         tqdm.write(f"Saved training data to {save_path}")
@@ -569,7 +574,12 @@ class Data:
             result = int(row["Result"])
 
             # skip no contest fights
-            if result == 4: continue
+            if result == 4:
+                continue
+
+            label = outcome_method_label(result, str(row["Method"]))
+            if label is None:
+                continue
 
             try:
                 sequence1, days_before1, days_gap1 = self.get_fight_sequence(
@@ -583,8 +593,7 @@ class Data:
                     tqdm.write(f"Skipping fight: {e}")
                 continue
 
-            label = result - 1
-            opp_label = opposite_label(result)
+            opp_label = opposite_outcome_method_label(label)
             date_key = parse_date_sort_key(date)
             matchup = self.get_matchup_features(
                 name1,
@@ -659,6 +668,7 @@ class Data:
                 "labels": torch.tensor(labels, dtype=torch.long),
                 "fight_dates": torch.tensor(fight_dates, dtype=torch.long),
                 "max_fights": max_fights,
+                "num_classes": NUM_CLASSES,
             },
             save_path,
         )
