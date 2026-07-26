@@ -11,20 +11,27 @@ and training scripts for a variety of deep learning models.
 
 ## Next UFC Event Predictions
 
-Event date: July 25, 2026
+Event date: August 1, 2026
 
 <div align="center">
 
-| Fight | Win | Loss | Draw |
-| --- | --- | --- | --- |
-| Magomed Ankalaev vs Bogdan Guskov | 59.9% | 39.9% | 0.2% |
-| Steve Erceg vs Ramazan Temirov | 49.0% | 50.8% | 0.2% |
-| Islam Dulatov vs Wellington Turman | 71.3% | 28.5% | 0.2% |
-| Rizvan Kuniev vs Tyrell Fortune | 44.0% | 55.8% | 0.2% |
-| Valter Walker vs Thomas Petersen | 58.5% | 40.9% | 0.6% |
-| Santiago Ponzinibbio vs Sam Patterson | 27.1% | 72.7% | 0.2% |
-| Ismael Bonfim vs Axel Sola | 49.0% | 50.8% | 0.2% |
-| Nurullo Aliev vs Mike Davis | 72.7% | 27.1% | 0.2% |
+<table style="margin: 0 auto; text-align: center; border-collapse: collapse; border: 1px solid #d0d7de;">
+<thead>
+<tr>
+<th rowspan="2" style="text-align: center;">Fight</th>
+<th colspan="4" style="text-align: center; border-left: 1px solid #d0d7de;">Win</th>
+<th colspan="4" style="text-align: center; border-left: 1px solid #d0d7de;">Loss</th>
+<th rowspan="2" style="text-align: center; border-left: 1px solid #d0d7de;">Draw</th>
+</tr>
+<tr>
+<th style="text-align: center; border-left: 1px solid #d0d7de;">Overall</th><th style="text-align: center;">KO/TKO</th><th style="text-align: center;">Submission</th><th style="text-align: center;">Decision</th>
+<th style="text-align: center; border-left: 1px solid #d0d7de;">Overall</th><th style="text-align: center;">KO/TKO</th><th style="text-align: center;">Submission</th><th style="text-align: center;">Decision</th>
+</tr>
+</thead>
+<tbody>
+<tr><td style="text-align: center;">Uros Medic vs Daniel Rodriguez</td><td style="text-align: center; border-left: 1px solid #d0d7de;">56.9%</td><td style="text-align: center;">26.9%</td><td style="text-align: center;">7.1%</td><td style="text-align: center;">22.9%</td><td style="text-align: center; border-left: 1px solid #d0d7de;">40.4%</td><td style="text-align: center;">18.4%</td><td style="text-align: center;">7.3%</td><td style="text-align: center;">14.7%</td><td style="text-align: center; border-left: 1px solid #d0d7de;">2.7%</td></tr><tr><td style="text-align: center;">Jan Blachowicz vs Navajo Stirling</td><td style="text-align: center; border-left: 1px solid #d0d7de;">23.7%</td><td style="text-align: center;">10.3%</td><td style="text-align: center;">3.8%</td><td style="text-align: center;">9.6%</td><td style="text-align: center; border-left: 1px solid #d0d7de;">75.9%</td><td style="text-align: center;">31.3%</td><td style="text-align: center;">5.0%</td><td style="text-align: center;">39.6%</td><td style="text-align: center; border-left: 1px solid #d0d7de;">0.3%</td></tr><tr><td style="text-align: center;">Aleksandar Rakic vs Marcin Tybura</td><td style="text-align: center; border-left: 1px solid #d0d7de;">47.7%</td><td style="text-align: center;">27.9%</td><td style="text-align: center;">3.3%</td><td style="text-align: center;">16.5%</td><td style="text-align: center; border-left: 1px solid #d0d7de;">51.8%</td><td style="text-align: center;">20.6%</td><td style="text-align: center;">7.1%</td><td style="text-align: center;">24.1%</td><td style="text-align: center; border-left: 1px solid #d0d7de;">0.4%</td></tr><tr><td style="text-align: center;">Dusko Todorovic vs Robert Valentin</td><td style="text-align: center; border-left: 1px solid #d0d7de;">42.1%</td><td style="text-align: center;">15.6%</td><td style="text-align: center;">7.4%</td><td style="text-align: center;">19.1%</td><td style="text-align: center; border-left: 1px solid #d0d7de;">57.3%</td><td style="text-align: center;">25.2%</td><td style="text-align: center;">22.0%</td><td style="text-align: center;">10.1%</td><td style="text-align: center; border-left: 1px solid #d0d7de;">0.6%</td></tr><tr><td style="text-align: center;">Ludovit Klein vs Tofiq Musayev</td><td style="text-align: center; border-left: 1px solid #d0d7de;">67.3%</td><td style="text-align: center;">16.5%</td><td style="text-align: center;">7.1%</td><td style="text-align: center;">43.7%</td><td style="text-align: center; border-left: 1px solid #d0d7de;">32.4%</td><td style="text-align: center;">7.7%</td><td style="text-align: center;">3.1%</td><td style="text-align: center;">21.6%</td><td style="text-align: center; border-left: 1px solid #d0d7de;">0.4%</td></tr><tr><td style="text-align: center;">Mark Vologdin vs Josias Musasa</td><td style="text-align: center; border-left: 1px solid #d0d7de;">48.5%</td><td style="text-align: center;">11.3%</td><td style="text-align: center;">8.5%</td><td style="text-align: center;">28.7%</td><td style="text-align: center; border-left: 1px solid #d0d7de;">51.3%</td><td style="text-align: center;">12.9%</td><td style="text-align: center;">5.7%</td><td style="text-align: center;">32.7%</td><td style="text-align: center; border-left: 1px solid #d0d7de;">0.3%</td></tr><tr><td style="text-align: center;">Dennis Buzukja vs Bogdan Grad</td><td style="text-align: center; border-left: 1px solid #d0d7de;">35.0%</td><td style="text-align: center;">12.4%</td><td style="text-align: center;">5.5%</td><td style="text-align: center;">17.1%</td><td style="text-align: center; border-left: 1px solid #d0d7de;">64.6%</td><td style="text-align: center;">14.0%</td><td style="text-align: center;">13.0%</td><td style="text-align: center;">37.6%</td><td style="text-align: center; border-left: 1px solid #d0d7de;">0.4%</td></tr><tr><td style="text-align: center;">Mateusz Rebecki vs Kyle Prepolec</td><td style="text-align: center; border-left: 1px solid #d0d7de;">82.4%</td><td style="text-align: center;">17.2%</td><td style="text-align: center;">14.8%</td><td style="text-align: center;">50.4%</td><td style="text-align: center; border-left: 1px solid #d0d7de;">17.4%</td><td style="text-align: center;">5.8%</td><td style="text-align: center;">2.1%</td><td style="text-align: center;">9.5%</td><td style="text-align: center; border-left: 1px solid #d0d7de;">0.4%</td></tr>
+</tbody>
+</table>
 
 </div>
 

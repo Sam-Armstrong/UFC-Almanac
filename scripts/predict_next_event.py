@@ -1,9 +1,10 @@
 import argparse
 import datetime
+import html
 from pathlib import Path
 
 from ufc_almanac.data import Data
-from ufc_almanac.globals import CORE_TRANSFORMER_MODEL_PATH, VERBOSE
+from ufc_almanac.globals import CORE_TRANSFORMER_MODEL_PATH, OUTCOME_LABELS, VERBOSE
 from ufc_almanac.inference import FightPredictor
 from ufc_almanac.models import TransformerModel
 from ufc_almanac.scraping import scrape_next_event
@@ -11,6 +12,47 @@ from ufc_almanac.scraping import scrape_next_event
 
 README_SECTION_START = "## Next UFC Event Predictions\n\n"
 README_SECTION_END = "\n\nThe model used for"
+TABLE_BORDER_COLOR = "#d0d7de"
+
+WIN_METHOD_COLUMNS = [
+    ("Overall", ("Win",)),
+    ("KO/TKO", ("Win - KO/TKO",)),
+    ("Submission", ("Win - Submission",)),
+    (
+        "Decision",
+        (
+            "Win - Unanimous Decision",
+            "Win - Split Decision",
+            "Win - Majority Decision",
+        ),
+    ),
+]
+LOSS_METHOD_COLUMNS = [
+    ("Overall", ("Loss",)),
+    ("KO/TKO", ("Loss - KO/TKO",)),
+    ("Submission", ("Loss - Submission",)),
+    (
+        "Decision",
+        (
+            "Loss - Unanimous Decision",
+            "Loss - Split Decision",
+            "Loss - Majority Decision",
+        ),
+    ),
+]
+
+
+def table_cell_style(*, section_start: bool = False) -> str:
+    styles = ["text-align: center;"]
+    if section_start:
+        styles.append(f"border-left: 1px solid {TABLE_BORDER_COLOR};")
+    return f' style="{" ".join(styles)}"'
+
+
+def section_start_indices() -> set[int]:
+    win_count = len(WIN_METHOD_COLUMNS)
+    loss_count = len(LOSS_METHOD_COLUMNS)
+    return {1, 1 + win_count, 1 + win_count + loss_count}
 
 
 def parse_args() -> argparse.Namespace:
@@ -35,30 +77,120 @@ def parse_args() -> argparse.Namespace:
 def format_event_date(event_date: datetime.date) -> str:
     return f"{event_date.strftime('%B')} {event_date.day}, {event_date.year}"
 
+def format_probability(probability: float | None) -> str:
+    if probability is None:
+        return "—"
+    return f"{probability * 100:.1f}%"
+
+def prediction_value(
+    prediction: dict[str, float],
+    key: str,
+) -> float | None:
+    value = prediction.get(key)
+    if value is None:
+        return None
+    return float(value)
+
+def prediction_column_value(
+    prediction: dict[str, float],
+    keys: tuple[str, ...],
+) -> float | None:
+    values = [prediction_value(prediction, key) for key in keys]
+    if all(value is None for value in values):
+        return None
+    return sum(value or 0.0 for value in values)
+
+def format_prediction_row(
+    fighter1: str,
+    fighter2: str,
+    prediction: dict[str, float],
+) -> list[str]:
+    fight_label = f"{fighter1} vs {fighter2}"
+    cells = [fight_label]
+    for _, keys in WIN_METHOD_COLUMNS + LOSS_METHOD_COLUMNS:
+        cells.append(format_probability(prediction_column_value(prediction, keys)))
+    cells.append(format_probability(prediction_value(prediction, OUTCOME_LABELS[2])))
+    return cells
+
 def format_predictions_table(
     fights: list[tuple[str, str]],
     predictions: list[dict[str, float]],
+    *,
+    use_html: bool = False,
 ) -> str:
+    if use_html:
+        return _format_predictions_table_html(fights, predictions)
+    return _format_predictions_table_markdown(fights, predictions)
+
+def _format_predictions_table_markdown(
+    fights: list[tuple[str, str]],
+    predictions: list[dict[str, float]],
+) -> str:
+    win_headers = [f"Win ({label})" for label, _ in WIN_METHOD_COLUMNS]
+    loss_headers = [f"Loss ({label})" for label, _ in LOSS_METHOD_COLUMNS]
+    headers = ["Fight", *win_headers, *loss_headers, "Draw"]
+    separator = [":---:" if index > 0 else "---" for index in range(len(headers))]
     lines = [
-        "| Fight | Win | Loss | Draw |",
-        "| --- | --- | --- | --- |",
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join(separator) + " |",
     ]
-    for (fighter1, fighter2), result in zip(fights, predictions):
-        win_pct = result["Win"] * 100
-        loss_pct = result["Loss"] * 100
-        draw_pct = result["Draw"] * 100
-        fight_label = f"{fighter1} vs {fighter2}"
-        lines.append(
-            f"| {fight_label} | {win_pct:.1f}% | {loss_pct:.1f}% | {draw_pct:.1f}% |"
-        )
+    for (fighter1, fighter2), prediction in zip(fights, predictions):
+        row = format_prediction_row(fighter1, fighter2, prediction)
+        lines.append("| " + " | ".join(row) + " |")
     return "\n".join(lines) + "\n"
+
+def _format_predictions_table_html(
+    fights: list[tuple[str, str]],
+    predictions: list[dict[str, float]],
+) -> str:
+    win_count = len(WIN_METHOD_COLUMNS)
+    loss_count = len(LOSS_METHOD_COLUMNS)
+    section_starts = section_start_indices()
+    win_subheaders = "".join(
+        f"<th{table_cell_style(section_start=index == 0)}>{html.escape(label)}</th>"
+        for index, (label, _) in enumerate(WIN_METHOD_COLUMNS)
+    )
+    loss_subheaders = "".join(
+        f"<th{table_cell_style(section_start=index == 0)}>{html.escape(label)}</th>"
+        for index, (label, _) in enumerate(LOSS_METHOD_COLUMNS)
+    )
+    rows = []
+    for (fighter1, fighter2), prediction in zip(fights, predictions):
+        cells = format_prediction_row(fighter1, fighter2, prediction)
+        row_cells = "".join(
+            f"<td{table_cell_style(section_start=index in section_starts)}>"
+            f"{html.escape(cell)}</td>"
+            for index, cell in enumerate(cells)
+        )
+        rows.append(f"<tr>{row_cells}</tr>")
+
+    return (
+        f'<table style="margin: 0 auto; text-align: center; '
+        f'border-collapse: collapse; border: 1px solid {TABLE_BORDER_COLOR};">\n'
+        "<thead>\n"
+        "<tr>\n"
+        f'<th rowspan="2"{table_cell_style()}>Fight</th>\n'
+        f'<th colspan="{win_count}"{table_cell_style(section_start=True)}>Win</th>\n'
+        f'<th colspan="{loss_count}"{table_cell_style(section_start=True)}>Loss</th>\n'
+        f'<th rowspan="2"{table_cell_style(section_start=True)}>Draw</th>\n'
+        "</tr>\n"
+        "<tr>\n"
+        f"{win_subheaders}\n"
+        f"{loss_subheaders}\n"
+        "</tr>\n"
+        "</thead>\n"
+        "<tbody>\n"
+        f"{''.join(rows)}\n"
+        "</tbody>\n"
+        "</table>\n"
+    )
 
 def format_predictions_section(
     event_date: str,
     fights: list[tuple[str, str]],
     predictions: list[dict[str, float]],
 ) -> str:
-    table = format_predictions_table(fights, predictions)
+    table = format_predictions_table(fights, predictions, use_html=True)
     return f'Event date: {event_date}\n\n<div align="center">\n\n{table}\n</div>\n'
 
 def update_readme(readme_path: Path, section_content: str) -> None:
