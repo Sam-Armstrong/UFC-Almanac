@@ -16,10 +16,10 @@ TABLE_BORDER_COLOR = "#d0d7de"
 
 WIN_METHOD_COLUMNS = [
     ("Overall", ("Win",)),
-    ("KO/TKO", ("Win - KO/TKO",)),
-    ("Submission", ("Win - Submission",)),
+    ("KO", ("Win - KO/TKO",)),
+    ("Sub", ("Win - Submission",)),
     (
-        "Decision",
+        "Dec",
         (
             "Win - Unanimous Decision",
             "Win - Split Decision",
@@ -29,10 +29,10 @@ WIN_METHOD_COLUMNS = [
 ]
 LOSS_METHOD_COLUMNS = [
     ("Overall", ("Loss",)),
-    ("KO/TKO", ("Loss - KO/TKO",)),
-    ("Submission", ("Loss - Submission",)),
+    ("KO", ("Loss - KO/TKO",)),
+    ("Sub", ("Loss - Submission",)),
     (
-        "Decision",
+        "Dec",
         (
             "Loss - Unanimous Decision",
             "Loss - Split Decision",

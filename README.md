@@ -24,8 +24,8 @@ Event date: August 1, 2026
 <th rowspan="2" style="text-align: center; border-left: 1px solid #d0d7de;">Draw</th>
 </tr>
 <tr>
-<th style="text-align: center; border-left: 1px solid #d0d7de;">Overall</th><th style="text-align: center;">KO/TKO</th><th style="text-align: center;">Submission</th><th style="text-align: center;">Decision</th>
-<th style="text-align: center; border-left: 1px solid #d0d7de;">Overall</th><th style="text-align: center;">KO/TKO</th><th style="text-align: center;">Submission</th><th style="text-align: center;">Decision</th>
+<th style="text-align: center; border-left: 1px solid #d0d7de;">Overall</th><th style="text-align: center;">KO</th><th style="text-align: center;">Sub</th><th style="text-align: center;">Dec</th>
+<th style="text-align: center; border-left: 1px solid #d0d7de;">Overall</th><th style="text-align: center;">KO</th><th style="text-align: center;">Sub</th><th style="text-align: center;">Dec</th>
 </tr>
 </thead>
 <tbody>
