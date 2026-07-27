@@ -29,12 +29,14 @@ def infer_num_classes(state_dict: dict[str, torch.Tensor]) -> int:
     """
     Infer the number of output classes from a saved state dict.
     """
-    if "classifier.3.weight" in state_dict:
-        return int(state_dict["classifier.3.weight"].shape[0])
-    if "fc3.weight" in state_dict:
-        return int(state_dict["fc3.weight"].shape[0])
-    if "linear.weight" in state_dict:
-        return int(state_dict["linear.weight"].shape[0])
+    for key in (
+        "classifier.3.weight",
+        "classifier.0.weight",
+        "fc3.weight",
+        "linear.weight",
+    ):
+        if key in state_dict:
+            return int(state_dict[key].shape[0])
     return NUM_CLASSES
 
 

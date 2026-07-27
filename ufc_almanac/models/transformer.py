@@ -144,7 +144,7 @@ class TransformerModel(nn.Module):
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
             nhead=nhead,
-            dim_feedforward=d_model * 4,
+            dim_feedforward=d_model,
             dropout=dropout,
             batch_first=True,
             activation=nn.functional.gelu,
@@ -158,12 +158,7 @@ class TransformerModel(nn.Module):
         self.cross_attention = FighterCrossAttention(d_model, nhead, dropout)
         self.pooling = AttentionPooling(d_model)
         classifier_input_size = d_model * 4 + MATCHUP_FEATURE_SIZE
-        self.classifier = nn.Sequential(
-            nn.Linear(classifier_input_size, d_model, bias=False),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(d_model, num_classes, bias=False),
-        )
+        self.classifier = nn.Linear(classifier_input_size, num_classes, bias=True)
 
     def encode_sequence(
         self,

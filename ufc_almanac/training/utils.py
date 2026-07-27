@@ -124,7 +124,7 @@ def extract_model_config(model: nn.Module) -> dict[str, Any]:
             "max_fights": model.max_fights,
             "d_model": model.static_proj.out_features,
             "num_layers": len(model.transformer.layers),
-            "dropout": model.classifier[2].p,
+            "dropout": model.cross_attention.dropout.p,
         }
     return {"dropout": model.dropout.p}
 
