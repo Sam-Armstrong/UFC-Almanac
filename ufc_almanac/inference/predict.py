@@ -400,6 +400,105 @@ class FightPredictor:
         )
 
 
+WIN_METHOD_COLUMNS = [
+    ("Overall", ("Win",)),
+    ("KO", ("Win - KO/TKO",)),
+    ("Sub", ("Win - Submission",)),
+    (
+        "Dec",
+        (
+            "Win - Unanimous Decision",
+            "Win - Split Decision",
+            "Win - Majority Decision",
+        ),
+    ),
+]
+LOSS_METHOD_COLUMNS = [
+    ("Overall", ("Loss",)),
+    ("KO", ("Loss - KO/TKO",)),
+    ("Sub", ("Loss - Submission",)),
+    (
+        "Dec",
+        (
+            "Loss - Unanimous Decision",
+            "Loss - Split Decision",
+            "Loss - Majority Decision",
+        ),
+    ),
+]
+
+
+def _format_percent(probability: float) -> str:
+    return f"{probability * 100:5.1f}%"
+
+
+def _sum_probabilities(result: dict[str, float], keys: tuple[str, ...]) -> float:
+    return sum(result.get(key, 0.0) for key in keys)
+
+
+def _box_table(headers: list[str], rows: list[list[str]], *, bold_columns: set[int] | None = None) -> str:
+    bold_columns = bold_columns or set()
+    widths = [
+        max(len(headers[index]), *(len(row[index]) for row in rows))
+        for index in range(len(headers))
+    ]
+
+    def cell(text: str, index: int, *, header: bool = False) -> str:
+        aligned = text.ljust(widths[index]) if index == 0 else text.rjust(widths[index])
+        padded = f" {aligned} "
+        if not header and index in bold_columns:
+            return f"\033[1m{padded}\033[0m"
+        return padded
+
+    def rule(left: str, mid: str, right: str) -> str:
+        return left + mid.join("─" * (width + 2) for width in widths) + right
+
+    lines = [
+        rule("┌", "┬", "┐"),
+        "│" + "│".join(cell(header, index, header=True) for index, header in enumerate(headers)) + "│",
+        rule("├", "┼", "┤"),
+    ]
+    for row in rows:
+        lines.append(
+            "│" + "│".join(cell(value, index) for index, value in enumerate(row)) + "│"
+        )
+    lines.append(rule("└", "┴", "┘"))
+    return "\n".join(lines)
+
+
+def format_outcome_table(
+    fighter1: str,
+    fighter2: str,
+    result: dict[str, float],
+) -> str:
+    """
+    Format win / loss / draw probabilities as an aligned stdout table.
+    """
+    title = f"{fighter1} vs {fighter2}"
+    has_methods = "Win - KO/TKO" in result
+    if not has_methods:
+        table = _box_table(
+            ["Outcome", "Pct"],
+            [
+                [label, _format_percent(result.get(label, 0.0))]
+                for label in OUTCOME_LABELS
+            ],
+            bold_columns={1},
+        )
+        return f"{title}\n{table}"
+
+    headers = ["", "Overall", "KO", "Sub", "Dec"]
+    rows = []
+    for outcome, columns in (("Win", WIN_METHOD_COLUMNS), ("Loss", LOSS_METHOD_COLUMNS)):
+        rows.append(
+            [outcome]
+            + [_format_percent(_sum_probabilities(result, keys)) for _, keys in columns]
+        )
+    rows.append(["Draw", _format_percent(result.get("Draw", 0.0)), "", "", ""])
+    table = _box_table(headers, rows, bold_columns={1})
+    return f"{title}\n{table}"
+
+
 def resolve_default_model_path(model: type[torch.nn.Module]) -> Path | None:
     """
     Return the default inference checkpoint for models that ship a core artifact.
@@ -459,28 +558,9 @@ def main() -> None:
             fighter2,
             str(date.today()),
         )
-        outcome_percentages = {
-            label: result[label] * 100 for label in OUTCOME_LABELS
-        }
-        print(
-            f"{fighter1} Win: {outcome_percentages['Win']:.2f}%, "
-            f"{fighter1} Loss: {outcome_percentages['Loss']:.2f}%, "
-            f"Draw: {outcome_percentages['Draw']:.2f}%"
-        )
-        method_percentages = {
-            label: result[label] * 100
-            for label in predictor.class_labels
-            if label != "Draw"
-        }
-        top_methods = sorted(
-            method_percentages.items(),
-            key=lambda item: item[1],
-            reverse=True,
-        )[:3]
-        method_summary = ", ".join(
-            f"{label}: {value:.2f}%" for label, value in top_methods
-        )
-        print(f"Top methods: {method_summary}")
+        print()
+        print(format_outcome_table(fighter1, fighter2, result))
+        print()
 
 
 if __name__ == "__main__":
