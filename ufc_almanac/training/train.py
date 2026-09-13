@@ -110,6 +110,9 @@ def evaluate(
 
     return total_loss / total, (correct / total) * 100, total_brier / total
 
+def _checkpoint_score(val_brier: float, val_loss: float, brier_weighting: float) -> float:
+    return val_brier * brier_weighting + val_loss
+
 def _training_run_description(
     base_desc: str,
     run_number: int | None,
@@ -128,6 +131,7 @@ def train_ff(
     val_fraction: float,
     weight_decay: float,
     dropout: float,
+    brier_weighting: float = 2.0,
     model_path: Path | None = None,
     save_checkpoint: bool = True,
     run_number: int | None = None,
@@ -222,12 +226,14 @@ def train_ff(
         val_loss, val_accuracy, val_brier = evaluate(
             model, device, val_loader, criterion, is_transformer=False
         )
-        if val_brier < best_val_brier:
+        score = _checkpoint_score(val_brier, val_loss, brier_weighting)
+        best_score = _checkpoint_score(best_val_brier, best_val_loss, brier_weighting)
+        if score < best_score:
             best_model_state = {
                 key: value.detach().clone()
                 for key, value in model.state_dict().items()
             }
-        if save_checkpoint and (epoch + 1) > save_after_epoch and val_brier < best_val_brier:
+        if save_checkpoint and (epoch + 1) > save_after_epoch and score < best_score:
             save_artifacts(
                 model,
                 resolved_model_path,
@@ -287,6 +293,7 @@ def train_transformer(
     dropout: float,
     d_model: int,
     num_layers: int,
+    brier_weighting: float = 2.0,
     model_path: Path | None = None,
     optimize_temp: bool = False,
     save_checkpoint: bool = True,
@@ -406,12 +413,14 @@ def train_transformer(
         val_loss, val_accuracy, val_brier = evaluate(
             model, device, val_loader, criterion, is_transformer=True
         )
-        if val_brier < best_val_brier:
+        score = _checkpoint_score(val_brier, val_loss, brier_weighting)
+        best_score = _checkpoint_score(best_val_brier, best_val_loss, brier_weighting)
+        if score < best_score:
             best_model_state = {
                 key: value.detach().clone()
                 for key, value in model.state_dict().items()
             }
-        if save_checkpoint and (epoch + 1) > save_after_epoch and val_brier < best_val_brier:
+        if save_checkpoint and (epoch + 1) > save_after_epoch and score < best_score:
             save_artifacts(
                 model,
                 resolved_model_path,
@@ -567,7 +576,14 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=1,
         help="number of independent training runs; when greater than 1, saves the run "
-        "with the lowest validation Brier score (default: 1)",
+        "with the lowest weighted validation score (default: 1)",
+    )
+    parser.add_argument(
+        "--brier-weighting",
+        type=float,
+        default=2,
+        help="weight applied to validation Brier vs loss when selecting checkpoints "
+        "and the best restart (default: 2)",
     )
     return parser.parse_args()
 
@@ -626,6 +642,7 @@ def main() -> None:
         "val_fraction": args.val_fraction,
         "weight_decay": args.weight_decay,
         "dropout": args.dropout,
+        "brier_weighting": args.brier_weighting,
         "model_path": args.path,
     }
     if transformer_model:
@@ -653,7 +670,11 @@ def main() -> None:
     if args.restarts > 1:
         best_run_number, best_result = min(
             run_results,
-            key=lambda item: item[1]["best_val_brier"],
+            key=lambda item: _checkpoint_score(
+                item[1]["best_val_brier"],
+                item[1]["best_val_loss"],
+                args.brier_weighting,
+            ),
         )
         tqdm.write("Restart summary:")
         for run_number, result in run_results:
@@ -664,8 +685,9 @@ def main() -> None:
                 f"val accuracy {result['best_val_accuracy']:.2f}%"
             )
         tqdm.write(
-            f"Saving run {best_run_number} with lowest val Brier "
-            f"({best_result['best_val_brier']:.4f})"
+            f"Saving run {best_run_number} with lowest weighted val score "
+            f"(Brier {best_result['best_val_brier']:.4f} * {args.brier_weighting:g} + "
+            f"loss {best_result['best_val_loss']:.4f})"
         )
         save_artifacts(
             best_result["model"],

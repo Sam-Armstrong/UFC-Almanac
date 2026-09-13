@@ -99,6 +99,7 @@ python scripts/train.py --model transformer
 | `--rebuild-data` | Regenerate training data from CSV files | off |
 | `--optimize-temp` | Optimize temp scaling on the val set | off |
 | `--restarts` | Number of independent training runs | `1` |
+| `--brier-weighting` | Weight on val Brier vs loss when selecting checkpoints | `2` |
 
 Use `--rebuild-data` when the underlying CSV data has been updated. Changing `--max-fights` also regenerates transformer training data when it does not match the saved tensors.
 
